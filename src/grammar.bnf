@@ -37,7 +37,7 @@
 
 <AssignmentOperator>  := '<-'
 
-<Expression>        :=  <AssignmentExpression> ',' <Expression> | <AssignmentExpression>
+<Expression>        :=  <AssignmentExpression>
 
 
 
@@ -52,7 +52,7 @@
 
 <ArgumentList>           := <AssignmentExpression> ("," <AssignmentExpression>)*
 
-<MemberExpression>       := ((<FunctionExpression> | <PrimaryExpression>)(<MemberExpressionPart>*))
+<MemberExpression>       := ((<FunctionExpression> | <PrimaryExpression>)(<MemberExpressionPart>*)) 
 
 <MemberExpressionPart>   := "[" <Expression> "]" | "." (<Id> | <Literal>)
 

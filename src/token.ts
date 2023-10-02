@@ -31,6 +31,8 @@ export enum TokenType {
   ge = "greaterThanOrEqual", // >=
   eq = "equal", // ===
   neq = "notEqual", // !==
+  and = "and",
+  or = "or",
 
   /*
    * arithmetic operators
@@ -81,5 +83,5 @@ export class Token {
     readonly type: TokenType,
     readonly lexeme: string,
     readonly option: TokenOption,
-  ) {}
+  ) { }
 }

@@ -12,7 +12,7 @@ export class Tokenizer {
 
   prev: Token | null = null;
 
-  constructor(private source: string) {}
+  constructor(private source: string) { }
 
   error(message: string) {
     throw message;
@@ -88,14 +88,6 @@ export class Tokenizer {
         token += this.eat;
       }
     }
-
-    if (this.current !== " " && this.current !== "\n" && !this.iseof) {
-      throw this.error(
-        `Invalid character to be consider as number: ${this.current}.`,
-      );
-    }
-
-    if (!this.iseof) this.eat;
 
     return this.createToken(TokenType.number, token);
   }
