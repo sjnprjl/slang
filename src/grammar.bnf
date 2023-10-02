@@ -1,0 +1,82 @@
+<PrimaryExpression> := "(" <Expression> ")" 
+                      | <Id> 
+                      | <ArrayLiteral>
+                      | <Literal>
+                      | <IfExpression>
+
+<Literal>           := string | number | boolean | null
+
+
+<ArrayLiteral>      := "{" <ElementList> "}"
+
+<ElementList>       := (<AssignmentExpression> ",")*
+
+
+
+<UnaryExpression>          := <UnaryOperator> <UnaryExpression> | <LeftHandSideExpression>
+
+<UnaryOperator>            := ("+" | "-" | "++" | "--" | "!" )
+
+<MultiplicativeExpression> := <UnaryExpression> <UnaryOperator> <MultiplicativeExpression> | <UnaryExpression>
+
+<AdditiveExpression>     := <MultiplicativeExpression> ("+" | "-") <AdditiveExpression> | <MultiplicativeExpression>
+
+<RelationalExpression>   := <AdditiveExpression>  ( "lt" | "gt" | "le" | "ge" ) <RelationalExpression> | <AdditiveExpression>
+
+<EqualityExpression>     := <RelationalExpression> ('eq' | "neq") <EqualityExpression> | <RelationalExpression>
+
+<LogicalAndExpression>   := <EqualityExpression> "and" <LogicalAndExpression> | <EqualityExpression>
+
+<LogicalOrExpression>    := <LogicalAndExpression> "or" <LogicalOrExpression> | <LogicalAndExpression>
+
+<ConditionalExpression>  := <LogicalOrExpression>
+
+
+
+<AssignmentExpression := <LeftHandSideExpression> <AssignmentOperator> <AssignmentExpression> | <ConditionalExpression>
+
+<AssignmentOperator>  := '<-'
+
+<Expression>        :=  <AssignmentExpression> ',' <Expression> | <AssignmentExpression>
+
+
+
+<LeftHandSideExpression> := <CallExpression> 
+                          | <MemberExpression>
+
+<CallExpression>         := <MemberExpression> <Arguments>(<CallExpressionPart>)*
+
+<CallExpressionPart>     := <Arguments>
+
+<Arguments>              := "(" <ArgumentList> ")"
+
+<ArgumentList>           := <AssignmentExpression> ("," <AssignmentExpression>)*
+
+<MemberExpression>       := ((<FunctionExpression> | <PrimaryExpression>)(<MemberExpressionPart>*))
+
+<MemberExpressionPart>   := "[" <Expression> "]" | "." (<Id> | <Literal>)
+
+
+<FunctionExpression>     := 'fn' <Id>? "(" <ParameterList>? ")" <FunctionPart>
+
+<FunctionPart>           := '->' <ExpressionStatement> |  <FunctionBody>
+
+<FunctionBody>           := <StatementList> 'end'
+
+<ExpressionStatement>    := <Expression> <End>
+
+<Statement>              :=  <ExpressionStatement> 
+                            
+
+<StatementList>          := <Statement>+
+
+
+<IfExpression>           := 'if' <Expression> <IfExpressionPart>
+
+<IfExpressionPart>       := <StatementList> <ElifStatement>
+
+<ElifStatement>          := 'end' | 'elif' <IfExpression> | 'else' <StatementList> 'end'
+
+
+<Program>                := <StatementList>? <eof>
+<T>                      := '\n'
