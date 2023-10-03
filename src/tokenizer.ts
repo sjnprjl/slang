@@ -183,6 +183,9 @@ export class Tokenizer {
       if (this.current === ".") {
         return this.createToken(TokenType.dot, this.eat);
       }
+      if (this.current === "%") {
+        return this.createToken(TokenType.mod, this.eat);
+      }
 
       if (this.isidentinitial) return this.tokenizeId();
 
