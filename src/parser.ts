@@ -7,6 +7,8 @@ import {
   CallExpression,
   EmptyStatement,
   Expr,
+  FunctionExpression,
+  Identifier,
   IdentifierOpt,
   IfExpression,
   Kind,
@@ -220,10 +222,65 @@ export class Parser {
     });
   }
 
+  functionParameterList(): ReturnType<typeof this.identifier>[] {
+    const params: ReturnType<typeof this.identifier>[] = [];
+    this.eat(TokenType.leftParen, "( expected");
+    if (this.check(TokenType.rightParen) && this.match(TokenType.rightParen)) {
+      return params;
+    }
+
+    params.push(this.identifier());
+
+    while (this.check(TokenType.comma)) {
+      this.advance();
+      params.push(this.identifier());
+    }
+    this.eat(TokenType.rightParen, ") expected");
+    return params;
+  }
+
+  functionExpression() {
+    this.eat(TokenType.fn, "fn expect for function expression.");
+    // anon func?
+
+    let id: Token | undefined = undefined;
+
+    if (this.check(TokenType.id)) {
+      // named func
+      id = this.advance();
+    }
+
+    const parameters = this.functionParameterList();
+    const body = this.functionBody();
+
+    return this.createAst<FunctionExpression>("FunctionExpression", {
+      anonymous: !!id,
+      token: null,
+      id: id
+        ? this.createAst<Identifier>("Identifier", {
+          token: id,
+          value: id.lexeme,
+        })
+        : undefined,
+      params: parameters,
+      body,
+    });
+  }
+
+  functionBody() {
+    const body = [];
+    while (!this.check(TokenType.end) && !this.check(TokenType.eof)) {
+      body.push(this.statement());
+    }
+    this.eat(TokenType.end, "function end expected");
+
+    return body;
+  }
+
   memberExpression(): Expr {
     if (this.check(TokenType.fn)) {
       // function expression
-      throw "function expression not implemented";
+      return this.functionExpression();
     }
 
     const expr = this.primary();
@@ -285,11 +342,13 @@ export class Parser {
     const left = this.conditionalExpression();
     if (!this.check(TokenType.assignment)) return left;
     this.eat(TokenType.assignment, "<- expected got " + this.peek().type);
-    return this.createAst<AssignmentExpression>("AssignmentExpression", {
+    const expr = this.createAst<AssignmentExpression>("AssignmentExpression", {
       token: null,
       id: left as Expr,
       value: this.assignmentExpression(),
     });
+
+    return expr;
   }
 
   expression() {

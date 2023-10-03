@@ -1,12 +1,16 @@
 import {
+  AssignmentExpression,
   BinaryExpression,
   Expr,
+  FunctionExpression,
   Identifier,
   IfExpression,
   Literal,
+  MemberExpression,
   Program,
   UnaryExpression,
 } from "./ast.ts";
+import { Environment } from "./environment.ts";
 import { TokenType } from "./token.ts";
 import { LiteralReturnType } from "./types.ts";
 
@@ -14,13 +18,16 @@ export function visitLiteral(ast: Literal) {
   return ast.value;
 }
 
-export function visitIdentifier(ast: Identifier) {
-  return ast.value;
+export function visitIdentifier(ast: Identifier, scope: Environment) {
+  return scope.resolve(ast.value);
 }
 
-export function visitBinaryExpression(ast: BinaryExpression) {
-  const left = ast.left.accept() as LiteralReturnType;
-  const right = ast.right.accept() as LiteralReturnType;
+export function visitBinaryExpression(
+  ast: BinaryExpression,
+  scope: Environment,
+) {
+  const left = ast.left.accept(scope) as LiteralReturnType;
+  const right = ast.right.accept(scope) as LiteralReturnType;
 
   // TODO: there is a bug:
   if (left === null || right === null) return null;
@@ -57,31 +64,31 @@ export function visitBinaryExpression(ast: BinaryExpression) {
   }
 }
 
-export function evaluateList(statements: Expr[]) {
+export function evaluateList(statements: Expr[], scope: Environment) {
   let result = null;
   for (const stmt of statements) {
     if (stmt.kind === "EmptyStatement") continue;
-    result = stmt.accept();
+    result = stmt.accept(scope);
   }
   return result;
 }
 
-export function visitProgram(ast: Program) {
-  return evaluateList(ast.body);
+export function visitProgram(ast: Program, scope: Environment) {
+  return evaluateList(ast.body, scope);
 }
 
-export function visitUnaryExpression(ast: UnaryExpression) {
+export function visitUnaryExpression(ast: UnaryExpression, scope: Environment) {
   let result = null;
 
   switch (ast.operator.symbol) {
     case TokenType.minus: // TODO: numeric expression
-      result = -(ast.expression.accept() as number);
+      result = -(ast.expression.accept(scope) as number);
       break;
     case TokenType.plus: // TODO: numeric expression
-      result = ast.expression.accept() as number;
+      result = ast.expression.accept(scope) as number;
       break;
     case TokenType.bang: // TODO: boolean expression
-      result = !ast.expression.accept() as boolean;
+      result = !ast.expression.accept(scope) as boolean;
       break;
 
     default:
@@ -91,14 +98,35 @@ export function visitUnaryExpression(ast: UnaryExpression) {
   return result;
 }
 
-export function visitIfExpression(ast: IfExpression) {
+export function visitIfExpression(ast: IfExpression, scope: Environment) {
   if (typeof ast.condition === "boolean" && ast.condition === true) {
-    return evaluateList(ast.body);
+    return evaluateList(ast.body, scope);
   }
 
-  if (ast.condition.accept()) return evaluateList(ast.body);
+  if (ast.condition.accept(scope)) return evaluateList(ast.body, scope);
 
   if (!ast.elif) return null;
 
-  return visitIfExpression(ast.elif);
+  return visitIfExpression(ast.elif, scope);
+}
+
+export function visitFunctionExpression(
+  ast: FunctionExpression,
+  scope: Environment,
+) {
+  // TODO:
+  return null;
+}
+
+export function visitAssignmentExpression(
+  ast: AssignmentExpression,
+  scope: Environment,
+) {
+  const variable = ast.id.value;
+  const value = ast.value.accept(scope);
+  return scope.set(variable, value);
+}
+
+export function visitMemberExpression(ast: MemberExpression) {
+  return ast;
 }

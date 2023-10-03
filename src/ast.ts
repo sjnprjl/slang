@@ -1,9 +1,13 @@
+import { Environment } from "./environment.ts";
 import { Token, TokenType } from "./token.ts";
 import {
+  visitAssignmentExpression,
   visitBinaryExpression,
+  visitFunctionExpression,
   visitIdentifier,
   visitIfExpression,
   visitLiteral,
+  visitMemberExpression,
   visitProgram,
   visitUnaryExpression,
 } from "./visitor.ts";
@@ -22,10 +26,11 @@ export type Kind =
   | "MemberExpression"
   | "IfExpression"
   | "EmptyStatement"
+  | "FunctionExpression"
   | "Program";
 
 export interface Acceptable {
-  accept(ast: BaseAst): unknown;
+  accept(ast: BaseAst, scope: Environment): unknown;
 }
 
 export interface AstFactoryOption extends BaseAst {
@@ -37,7 +42,7 @@ export interface BaseAst {
   token: Token | null;
 }
 
-export interface Expr extends BaseAst, AcceptableReturnType {}
+export interface Expr extends BaseAst, AcceptableReturnType { }
 
 export interface Operator extends BaseAst {
   symbol: TokenType;
@@ -66,7 +71,7 @@ export interface Identifier extends BaseAst {
   value: string;
 }
 // deno-lint-ignore no-empty-interface
-export interface IdentifierOpt extends Omit<Identifier, "value"> {}
+export interface IdentifierOpt extends Omit<Identifier, "value"> { }
 
 export interface MemberExpression extends BaseAst {
   id: Expr;
@@ -80,15 +85,16 @@ export interface CallExpression extends BaseAst {
 }
 
 export interface AssignmentExpression extends BaseAst {
-  id: BaseAst;
-  value: BaseAst;
+  id: Identifier; // TODO: member expression
+  value: Expr;
 }
 
 export interface Program extends BaseAst {
   body: Expr[];
 }
 
-export interface EmptyStatement extends BaseAst {}
+// deno-lint-ignore no-empty-interface
+export interface EmptyStatement extends BaseAst { }
 
 export interface IfExpression extends BaseAst {
   condition: Expr | true;
@@ -96,18 +102,25 @@ export interface IfExpression extends BaseAst {
   elif?: IfExpression;
 }
 
+export interface FunctionExpression extends BaseAst {
+  id?: Identifier;
+  anonymous: boolean;
+  body: Expr[];
+  params: (IdentifierOpt & AcceptableReturnType)[];
+}
+
 export type AcceptableReturnType = ReturnType<typeof asAcceptable>;
 
 function asAcceptable<T extends BaseAst>(
   ast: T,
   _accept: Acceptable["accept"],
-): T & { accept: () => ReturnType<Acceptable["accept"]> } {
+): T & { accept: (scope: Environment) => ReturnType<Acceptable["accept"]> } {
   const _ast = { ...ast };
 
   return {
     ..._ast,
-    accept() {
-      return _accept(ast);
+    accept(scope: Environment) {
+      return _accept(ast, scope);
     },
   };
 }
@@ -145,9 +158,8 @@ export function astFactory<T extends BaseAst>(
 
     case "BinaryExpression":
       return asAcceptable(option, visitBinaryExpression);
-    case "CallExpression":
-    case "MemberExpression":
     case "AssignmentExpression":
+      return asAcceptable(option, visitAssignmentExpression);
     case "UnaryExpression":
       return asAcceptable(option, visitUnaryExpression);
     case "Program":
@@ -156,6 +168,11 @@ export function astFactory<T extends BaseAst>(
       return asAcceptable(option, (ast: Expr) => ast);
     case "IfExpression":
       return asAcceptable(option, visitIfExpression);
+    case "FunctionExpression":
+      return asAcceptable(option, visitFunctionExpression);
+    case "MemberExpression":
+      return asAcceptable(option, visitMemberExpression);
+    case "CallExpression":
     default:
       throw `Ast not implemented for ${option.kind}`;
   }
