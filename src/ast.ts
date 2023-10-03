@@ -4,6 +4,7 @@ import {
   visitIdentifier,
   visitLiteral,
   visitProgram,
+  visitUnaryExpression,
 } from "./visitor.ts";
 
 export type Kind =
@@ -42,7 +43,7 @@ export interface Operator extends BaseAst {
 
 export interface UnaryExpression extends BaseAst {
   operator: Operator;
-  expression: BaseAst;
+  expression: Expr;
 }
 
 export interface BinaryExpression extends BaseAst {
@@ -140,6 +141,7 @@ export function astFactory<T extends BaseAst>(
     case "MemberExpression":
     case "AssignmentExpression":
     case "UnaryExpression":
+      return asAcceptable(option, visitUnaryExpression);
     case "Program":
       return asAcceptable(option, visitProgram);
     case "EmptyStatement":

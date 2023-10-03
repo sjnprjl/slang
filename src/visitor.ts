@@ -1,4 +1,10 @@
-import { BinaryExpression, Identifier, Literal, Program } from "./ast.ts";
+import {
+  BinaryExpression,
+  Identifier,
+  Literal,
+  Program,
+  UnaryExpression,
+} from "./ast.ts";
 import { TokenType } from "./token.ts";
 import { LiteralReturnType } from "./types.ts";
 
@@ -55,5 +61,26 @@ export function visitProgram(ast: Program) {
     if (stmt.kind === "EmptyStatement") continue;
     result = stmt.accept();
   }
+  return result;
+}
+
+export function visitUnaryExpression(ast: UnaryExpression) {
+  let result = null;
+
+  switch (ast.operator.symbol) {
+    case TokenType.minus: // TODO: numeric expression
+      result = -(ast.expression.accept() as number);
+      break;
+    case TokenType.plus: // TODO: numeric expression
+      result = ast.expression.accept() as number;
+      break;
+    case TokenType.bang: // TODO: boolean expression
+      result = !ast.expression.accept() as boolean;
+      break;
+
+    default:
+      throw "Invalid unary operator";
+  }
+
   return result;
 }
