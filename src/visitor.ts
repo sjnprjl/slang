@@ -92,9 +92,11 @@ export function visitUnaryExpression(ast: UnaryExpression) {
 }
 
 export function visitIfExpression(ast: IfExpression) {
-  if (typeof ast.condition === "boolean" || ast.condition.accept()) {
+  if (typeof ast.condition === "boolean" && ast.condition === true) {
     return evaluateList(ast.body);
   }
+
+  if (ast.condition.accept()) return evaluateList(ast.body);
 
   if (!ast.elif) return null;
 
