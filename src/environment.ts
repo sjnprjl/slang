@@ -8,7 +8,7 @@ interface IEnvironment {
 
 export class Environment {
   private variables = new Map();
-  private parent?: Environment;
+  readonly parent?: Environment;
 
   constructor(option?: IEnvironment) {
     this.parent = option?.parent;

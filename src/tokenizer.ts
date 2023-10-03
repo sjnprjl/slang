@@ -12,7 +12,7 @@ export class Tokenizer {
 
   prev: Token | null = null;
 
-  constructor(private source: string) { }
+  constructor(private source: string) {}
 
   error(message: string) {
     throw message;
@@ -187,6 +187,9 @@ export class Tokenizer {
         return this.createToken(TokenType.mod, this.eat);
       }
 
+      if (this.current === "@") {
+        return this.createToken(TokenType.global, this.eat); // awesome innit?
+      }
       if (this.isidentinitial) return this.tokenizeId();
 
       if (this.current === "\n") {

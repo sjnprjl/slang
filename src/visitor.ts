@@ -19,6 +19,9 @@ export function visitLiteral(ast: Literal) {
 }
 
 export function visitIdentifier(ast: Identifier, scope: Environment) {
+  if (ast.outer && scope.parent) {
+    return scope.parent.resolve(ast.value);
+  }
   return scope.resolve(ast.value);
 }
 
@@ -98,16 +101,18 @@ export function visitUnaryExpression(ast: UnaryExpression, scope: Environment) {
   return result;
 }
 
-export function visitIfExpression(ast: IfExpression, scope: Environment) {
+export function visitIfExpression(ast: IfExpression, declaration: Environment) {
+  const scope = new Environment({ parent: declaration });
+
   if (typeof ast.condition === "boolean" && ast.condition === true) {
-    return evaluateList(ast.body, scope);
+    return evaluateList(ast.body, declaration);
   }
 
-  if (ast.condition.accept(scope)) return evaluateList(ast.body, scope);
+  if (ast.condition.accept(declaration)) return evaluateList(ast.body, scope);
 
   if (!ast.elif) return null;
 
-  return visitIfExpression(ast.elif, scope);
+  return visitIfExpression(ast.elif, declaration);
 }
 
 export function visitFunctionExpression(
@@ -124,6 +129,11 @@ export function visitAssignmentExpression(
 ) {
   const variable = ast.id.value;
   const value = ast.value.accept(scope);
+
+  if (ast.id.outer && scope.parent) {
+    return scope.parent.set(variable, value);
+  }
+
   return scope.set(variable, value);
 }
 

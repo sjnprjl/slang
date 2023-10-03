@@ -69,9 +69,11 @@ export class Parser {
   }
 
   identifier() {
+    const global = this.check(TokenType.global) && this.match(TokenType.global);
     if (this.check(TokenType.id)) {
       return this.createAst<IdentifierOpt>("Identifier", {
         token: this.advance(),
+        outer: global,
       });
     }
     throw this.error(`Expected valid identifier token. got ${this.token.type}`);
@@ -98,6 +100,7 @@ export class Parser {
       case TokenType.null:
         return this.literal();
       case TokenType.id:
+      case TokenType.global:
         return this.identifier();
       case TokenType.leftParen:
         return this.groupExpression();
@@ -258,9 +261,9 @@ export class Parser {
       token: null,
       id: id
         ? this.createAst<Identifier>("Identifier", {
-          token: id,
-          value: id.lexeme,
-        })
+            token: id,
+            value: id.lexeme,
+          })
         : undefined,
       params: parameters,
       body,

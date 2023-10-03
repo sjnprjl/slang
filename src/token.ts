@@ -67,6 +67,11 @@ export enum TokenType {
    * identifier
    */
   id = "id",
+
+  /*
+   * outer scope accessor
+   */
+  global = "global",
 }
 
 interface TokenOption {
@@ -83,5 +88,5 @@ export class Token {
     readonly type: TokenType,
     readonly lexeme: string,
     readonly option: TokenOption,
-  ) { }
+  ) {}
 }

@@ -42,7 +42,7 @@ export interface BaseAst {
   token: Token | null;
 }
 
-export interface Expr extends BaseAst, AcceptableReturnType { }
+export interface Expr extends BaseAst, AcceptableReturnType {}
 
 export interface Operator extends BaseAst {
   symbol: TokenType;
@@ -69,9 +69,10 @@ export interface Identifier extends BaseAst {
   kind: "Identifier";
   token: Token;
   value: string;
+  outer: boolean;
 }
 // deno-lint-ignore no-empty-interface
-export interface IdentifierOpt extends Omit<Identifier, "value"> { }
+export interface IdentifierOpt extends Omit<Identifier, "value"> {}
 
 export interface MemberExpression extends BaseAst {
   id: Expr;
@@ -94,7 +95,7 @@ export interface Program extends BaseAst {
 }
 
 // deno-lint-ignore no-empty-interface
-export interface EmptyStatement extends BaseAst { }
+export interface EmptyStatement extends BaseAst {}
 
 export interface IfExpression extends BaseAst {
   condition: Expr | true;
