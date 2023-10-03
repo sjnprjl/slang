@@ -8,6 +8,7 @@ import {
   EmptyStatement,
   Expr,
   IdentifierOpt,
+  IfExpression,
   Kind,
   MemberExpression,
   Program,
@@ -98,7 +99,10 @@ export class Parser {
         return this.identifier();
       case TokenType.leftParen:
         return this.groupExpression();
+      case TokenType.if:
+        return this.ifExpression();
       default:
+        console.log(this.token);
         throw "invalid primary constant";
     }
   }
@@ -333,8 +337,87 @@ export class Parser {
     });
   }
 
-  ifExpression() {
-    this.eat(TokenType.if, "expected if");
+  ifExpressionBody() {
+    const statements = [];
+
+    if (this.check(TokenType.arrow)) {
+      this.advance();
+      statements.push(this.expression());
+      return statements;
+    }
+
+    while (
+      !match(this.token.type, [TokenType.elif, TokenType.else, TokenType.end])
+    ) {
+      statements.push(this.statement());
+    }
+    return statements;
+  }
+
+  ifExpressionPart() {
+    const condition = this.expression();
+    const arrow = this.check(TokenType.arrow);
+    const statements = this.ifExpressionBody();
+    return {
+      condition,
+      statements,
+      arrow,
+    };
+  }
+
+  elifExpressionPart(
+    cond: Expr,
+    statements: Expr[],
+    arrow: boolean,
+  ): IfExpression {
+    if (this.check(TokenType.end)) {
+      this.advance();
+      return this.createAst<IfExpression>("IfExpression", {
+        token: null,
+        condition: cond,
+        body: statements,
+      });
+    }
+    if (this.check(TokenType.elif)) {
+      this.advance();
+      const { condition, statements, arrow } = this.ifExpressionPart();
+      return this.createAst<IfExpression>("IfExpression", {
+        token: null,
+        condition,
+        body: statements,
+        elif: this.elifExpressionPart(condition, statements, arrow),
+      });
+    }
+
+    if (this.check(TokenType.else)) {
+      this.advance();
+      const arrow = this.check(TokenType.arrow);
+      const expr = this.createAst<IfExpression>("IfExpression", {
+        token: null,
+        condition: true,
+        body: this.ifExpressionBody(),
+      });
+
+      if (!arrow) this.eat(TokenType.end, "end expected");
+      return expr;
+    }
+
+    if (!arrow) throw "invalid elif expression";
+
+    const expr = this.createAst<IfExpression>("IfExpression", {
+      token: null,
+      condition: cond,
+      body: statements,
+    });
+    this.end();
+
+    return expr;
+  }
+
+  ifExpression(): IfExpression & AcceptableReturnType {
+    this.eat(TokenType.if, "if expected.");
+    const { condition, statements, arrow } = this.ifExpressionPart();
+    return this.elifExpressionPart(condition, statements, arrow);
   }
 
   literal() {

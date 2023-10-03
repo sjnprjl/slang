@@ -16,4 +16,5 @@ export const keywords = {
   false: TokenType.boolean,
   or: TokenType.or,
   and: TokenType.and,
+  end: TokenType.end,
 } as const;

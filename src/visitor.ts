@@ -1,6 +1,8 @@
 import {
   BinaryExpression,
+  Expr,
   Identifier,
+  IfExpression,
   Literal,
   Program,
   UnaryExpression,
@@ -55,13 +57,17 @@ export function visitBinaryExpression(ast: BinaryExpression) {
   }
 }
 
-export function visitProgram(ast: Program) {
+export function evaluateList(statements: Expr[]) {
   let result = null;
-  for (const stmt of ast.body) {
+  for (const stmt of statements) {
     if (stmt.kind === "EmptyStatement") continue;
     result = stmt.accept();
   }
   return result;
+}
+
+export function visitProgram(ast: Program) {
+  return evaluateList(ast.body);
 }
 
 export function visitUnaryExpression(ast: UnaryExpression) {
@@ -83,4 +89,14 @@ export function visitUnaryExpression(ast: UnaryExpression) {
   }
 
   return result;
+}
+
+export function visitIfExpression(ast: IfExpression) {
+  if (typeof ast.condition === "boolean" || ast.condition.accept()) {
+    return evaluateList(ast.body);
+  }
+
+  if (!ast.elif) return null;
+
+  return visitIfExpression(ast.elif);
 }

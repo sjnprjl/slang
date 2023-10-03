@@ -2,6 +2,7 @@ import { Token, TokenType } from "./token.ts";
 import {
   visitBinaryExpression,
   visitIdentifier,
+  visitIfExpression,
   visitLiteral,
   visitProgram,
   visitUnaryExpression,
@@ -19,6 +20,7 @@ export type Kind =
   | "CallExpression"
   | "AssignmentExpression"
   | "MemberExpression"
+  | "IfExpression"
   | "EmptyStatement"
   | "Program";
 
@@ -88,6 +90,12 @@ export interface Program extends BaseAst {
 
 export interface EmptyStatement extends BaseAst {}
 
+export interface IfExpression extends BaseAst {
+  condition: Expr | true;
+  body: Expr[];
+  elif?: IfExpression;
+}
+
 export type AcceptableReturnType = ReturnType<typeof asAcceptable>;
 
 function asAcceptable<T extends BaseAst>(
@@ -146,6 +154,8 @@ export function astFactory<T extends BaseAst>(
       return asAcceptable(option, visitProgram);
     case "EmptyStatement":
       return asAcceptable(option, (ast: Expr) => ast);
+    case "IfExpression":
+      return asAcceptable(option, visitIfExpression);
     default:
       throw `Ast not implemented for ${option.kind}`;
   }
