@@ -1,4 +1,10 @@
 import { Token, TokenType } from "./token.ts";
+import {
+  visitBinaryExpression,
+  visitIdentifier,
+  visitLiteral,
+  visitProgram,
+} from "./visitor.ts";
 
 export type Kind =
   | "StringLiteral"
@@ -15,6 +21,10 @@ export type Kind =
   | "EmptyStatement"
   | "Program";
 
+export interface Acceptable {
+  accept(ast: BaseAst): unknown;
+}
+
 export interface AstFactoryOption extends BaseAst {
   kind: Kind;
 }
@@ -23,6 +33,8 @@ export interface BaseAst {
   kind: Kind;
   token: Token | null;
 }
+
+export interface Expr extends BaseAst, AcceptableReturnType {}
 
 export interface Operator extends BaseAst {
   symbol: TokenType;
@@ -34,9 +46,9 @@ export interface UnaryExpression extends BaseAst {
 }
 
 export interface BinaryExpression extends BaseAst {
-  left: BaseAst;
+  left: Expr;
   operator: Operator;
-  right: BaseAst;
+  right: Expr;
 }
 
 export interface Literal extends BaseAst {
@@ -51,10 +63,10 @@ export interface Identifier extends BaseAst {
   value: string;
 }
 // deno-lint-ignore no-empty-interface
-export interface IdentifierOpt extends Omit<Identifier, "value"> { }
+export interface IdentifierOpt extends Omit<Identifier, "value"> {}
 
 export interface MemberExpression extends BaseAst {
-  id: Identifier;
+  id: Expr;
   member?: MemberExpression;
 }
 
@@ -70,43 +82,74 @@ export interface AssignmentExpression extends BaseAst {
 }
 
 export interface Program extends BaseAst {
-  body: BaseAst[];
+  body: Expr[];
 }
 
-export interface EmptyStatement extends BaseAst { }
+export interface EmptyStatement extends BaseAst {}
 
-export function astFactory<T extends BaseAst>(option: T): T {
+export type AcceptableReturnType = ReturnType<typeof asAcceptable>;
+
+function asAcceptable<T extends BaseAst>(
+  ast: T,
+  _accept: Acceptable["accept"],
+): T & { accept: () => ReturnType<Acceptable["accept"]> } {
+  const _ast = { ...ast };
+
+  return {
+    ..._ast,
+    accept() {
+      return _accept(ast);
+    },
+  };
+}
+
+export function astFactory<T extends BaseAst>(
+  option: T,
+): T & AcceptableReturnType {
   switch (option.kind) {
     case "StringLiteral":
-      return { ...option, value: option.token!.lexeme };
+      return asAcceptable(
+        { ...option, value: option.token!.lexeme },
+        visitLiteral,
+      );
     case "NumberLiteral":
-      return { ...option, value: +option.token!.lexeme };
+      return asAcceptable(
+        { ...option, value: +option.token!.lexeme },
+        visitLiteral,
+      );
     case "BooleanLiteral":
-      return {
-        ...option,
-        value: option.token!.lexeme === "true" ? true : false,
-      } as T;
+      return asAcceptable(
+        {
+          ...option,
+          value: option.token!.lexeme === "true" ? true : false,
+        },
+        visitLiteral,
+      );
     case "NullLiteral":
-      return { ...option, value: null };
+      return asAcceptable({ ...option, value: null }, visitLiteral);
 
     case "Identifier":
-      return { ...option, value: option.token!.lexeme };
+      return asAcceptable(
+        { ...option, value: option.token!.lexeme },
+        visitIdentifier,
+      );
 
     case "BinaryExpression":
+      return asAcceptable(option, visitBinaryExpression);
     case "CallExpression":
     case "MemberExpression":
     case "AssignmentExpression":
     case "UnaryExpression":
     case "Program":
+      return asAcceptable(option, visitProgram);
     case "EmptyStatement":
-      return option;
-
+      return asAcceptable(option, (ast: Expr) => ast);
     default:
       throw `Ast not implemented for ${option.kind}`;
   }
 }
 
-export function binaryAstBuilder(left: BaseAst, op: Token, right: BaseAst) {
+export function binaryAstBuilder(left: Expr, op: Token, right: Expr) {
   return astFactory<BinaryExpression>({
     kind: "BinaryExpression",
     token: null,
