@@ -12,6 +12,7 @@ export type Kind =
   | "CallExpression"
   | "AssignmentExpression"
   | "MemberExpression"
+  | "EmptyStatement"
   | "Program";
 
 export interface AstFactoryOption extends BaseAst {
@@ -72,6 +73,8 @@ export interface Program extends BaseAst {
   body: BaseAst[];
 }
 
+export interface EmptyStatement extends BaseAst { }
+
 export function astFactory<T extends BaseAst>(option: T): T {
   switch (option.kind) {
     case "StringLiteral":
@@ -95,6 +98,7 @@ export function astFactory<T extends BaseAst>(option: T): T {
     case "AssignmentExpression":
     case "UnaryExpression":
     case "Program":
+    case "EmptyStatement":
       return option;
 
     default:

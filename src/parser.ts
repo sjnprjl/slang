@@ -5,6 +5,7 @@ import {
   BaseAst,
   binaryAstBuilder,
   CallExpression,
+  EmptyStatement,
   Identifier,
   IdentifierOpt,
   Kind,
@@ -76,6 +77,13 @@ export class Parser {
     );
   }
 
+  groupExpression() {
+    this.eat(TokenType.leftParen, "( expected in group expression.");
+    const expression = this.expression();
+    this.eat(TokenType.rightParen, ") expected.");
+    return expression;
+  }
+
   primary() {
     switch (this.token.type) {
       case TokenType.string:
@@ -85,6 +93,8 @@ export class Parser {
         return this.literal();
       case TokenType.id:
         return this.identifier();
+      case TokenType.leftParen:
+        return this.groupExpression();
       default:
         console.log(this.token);
         throw "invalid primary constant";
@@ -282,6 +292,12 @@ export class Parser {
     return assignmentExpression;
   }
 
+  emptyStatement() {
+    return this.createAst<EmptyStatement>("EmptyStatement", {
+      token: this.eat(TokenType.nl, "empty statement should have linebreak."),
+    });
+  }
+
   expressionStatement() {
     const expression = this.expression();
     this.end();
@@ -297,11 +313,16 @@ export class Parser {
     throw "statement end expected";
   }
 
+  statement() {
+    if (this.check(TokenType.nl)) return this.emptyStatement();
+    return this.expressionStatement();
+  }
+
   program(): Program {
     const expressions = [];
 
     while (!this.check(TokenType.eof)) {
-      expressions.push(this.expressionStatement());
+      expressions.push(this.statement());
     }
 
     return this.createAst<Program>("Program", {

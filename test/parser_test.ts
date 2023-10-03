@@ -2,7 +2,7 @@ import { Parser } from "../src/parser.ts";
 import { Tokenizer } from "../src/tokenizer.ts";
 
 const source = `
-a <- 20
+20 * (2 + 3)
 `;
 
 const lexer = new Tokenizer(source);
