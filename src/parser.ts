@@ -1,12 +1,12 @@
 import {
+  AcceptableReturnType,
   AssignmentExpression,
   astFactory,
   AstFactoryOption,
-  BaseAst,
   binaryAstBuilder,
   CallExpression,
   EmptyStatement,
-  Identifier,
+  Expr,
   IdentifierOpt,
   Kind,
   MemberExpression,
@@ -58,7 +58,10 @@ export class Parser {
     return true;
   }
 
-  createAst<T extends AstFactoryOption>(kind: Kind, rest?: Omit<T, "kind">): T {
+  createAst<T extends AstFactoryOption>(
+    kind: Kind,
+    rest?: Omit<T, "kind">,
+  ): T & AcceptableReturnType {
     return astFactory<T>({ kind, token: null, ...rest } as T);
   }
 
@@ -96,12 +99,11 @@ export class Parser {
       case TokenType.leftParen:
         return this.groupExpression();
       default:
-        console.log(this.token);
         throw "invalid primary constant";
     }
   }
 
-  unaryExpression(): BaseAst {
+  unaryExpression(): Expr {
     if (!this.isUnaryOperator()) return this.leftHandExpression();
 
     const operator = this.eat(this.token.type, "");
@@ -124,7 +126,7 @@ export class Parser {
     );
   }
 
-  multiplicativeExpression(): BaseAst {
+  multiplicativeExpression(): Expr {
     const unaryExpression = this.unaryExpression();
 
     if (!this.isMultplicativeOperator()) return unaryExpression;
@@ -134,7 +136,7 @@ export class Parser {
     return binaryAstBuilder(unaryExpression, operator, right);
   }
 
-  additiveExpression(): BaseAst {
+  additiveExpression(): Expr {
     const multiplicative = this.multiplicativeExpression();
 
     if (!match(this.peek().type, [TokenType.plus, TokenType.minus])) {
@@ -146,7 +148,7 @@ export class Parser {
     return binaryAstBuilder(multiplicative, op, right);
   }
 
-  relationalExpression(): BaseAst {
+  relationalExpression(): Expr {
     const additive = this.additiveExpression();
     if (
       !match(this.token.type, [
@@ -166,7 +168,7 @@ export class Parser {
     );
   }
 
-  equalityExpression(): BaseAst {
+  equalityExpression(): Expr {
     const relationalExpression = this.relationalExpression();
 
     if (!match(this.token.type, [TokenType.eq, TokenType.neq])) {
@@ -180,14 +182,14 @@ export class Parser {
     );
   }
 
-  logicalAndExpression(): BaseAst {
+  logicalAndExpression(): Expr {
     const left = this.equalityExpression();
     if (!this.check(TokenType.and)) return left;
 
     return binaryAstBuilder(left, this.advance(), this.logicalAndExpression());
   }
 
-  logicalOrExpression(): BaseAst {
+  logicalOrExpression(): Expr {
     const left = this.logicalAndExpression();
     if (!this.check(TokenType.or)) return left;
     return binaryAstBuilder(left, this.advance(), this.logicalOrExpression());
@@ -197,10 +199,10 @@ export class Parser {
     return this.logicalOrExpression();
   }
 
-  memberExpressionPart(expr: BaseAst): MemberExpression {
+  memberExpressionPart(expr: Expr): MemberExpression & AcceptableReturnType {
     if (!this.check(TokenType.dot)) {
       return this.createAst<MemberExpression>("MemberExpression", {
-        id: expr as Identifier,
+        id: expr,
         token: null,
       });
     }
@@ -209,13 +211,13 @@ export class Parser {
     this.eat(this.token.type, "");
     const property = this.property();
     return this.createAst<MemberExpression>("MemberExpression", {
-      id: expr as Identifier,
+      id: expr,
       member: this.memberExpressionPart(property),
       token: null,
     });
   }
 
-  memberExpression(): BaseAst {
+  memberExpression(): Expr {
     if (this.check(TokenType.fn)) {
       // function expression
       throw "function expression not implemented";
@@ -234,7 +236,7 @@ export class Parser {
     throw "Unknow property kind";
   }
 
-  callExpressionPart(expr: BaseAst): BaseAst {
+  callExpressionPart(expr: Expr): Expr {
     if (!this.check(TokenType.leftParen)) return expr;
 
     const part = this.createAst<CallExpression>("CallExpression", {
@@ -246,7 +248,7 @@ export class Parser {
     return this.callExpressionPart(part);
   }
 
-  callExpression(): BaseAst {
+  callExpression(): Expr {
     const expr = this.memberExpression();
     if (!this.check(TokenType.leftParen)) return expr;
 
@@ -260,7 +262,7 @@ export class Parser {
     return args;
   }
 
-  argumentList(args = [] as BaseAst[]): BaseAst[] {
+  argumentList(args = [] as Expr[]): Expr[] {
     if (this.check(TokenType.rightParen)) return args;
     const expr = this.assignmentExpression();
     args.push(expr);
@@ -271,18 +273,18 @@ export class Parser {
     return args;
   }
 
-  leftHandExpression(): BaseAst {
+  leftHandExpression(): Expr {
     const expr = this.callExpression();
     return expr;
   }
 
-  assignmentExpression(): BaseAst {
+  assignmentExpression(): Expr {
     const left = this.conditionalExpression();
     if (!this.check(TokenType.assignment)) return left;
     this.eat(TokenType.assignment, "<- expected got " + this.peek().type);
     return this.createAst<AssignmentExpression>("AssignmentExpression", {
       token: null,
-      id: left as BaseAst,
+      id: left as Expr,
       value: this.assignmentExpression(),
     });
   }
@@ -318,7 +320,7 @@ export class Parser {
     return this.expressionStatement();
   }
 
-  program(): Program {
+  program(): Program & AcceptableReturnType {
     const expressions = [];
 
     while (!this.check(TokenType.eof)) {
