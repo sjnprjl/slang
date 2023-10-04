@@ -113,7 +113,7 @@ export class Parser {
       case TokenType.if:
         return this.ifExpression();
       default:
-        this.error("invalid primary constant");
+        throw this.error("invalid primary constant");
     }
   }
 
@@ -305,12 +305,14 @@ export class Parser {
     throw this.error("Unknow property kind");
   }
 
-  callExpressionPart(expr: Expr): Expr {
-    if (!this.check(TokenType.leftParen)) return expr;
+  callExpressionPart(
+    callee: Expr,
+  ): Expr {
+    if (!this.check(TokenType.leftParen)) return callee;
 
     const part = this.createAst<CallExpression>("CallExpression", {
       token: null,
-      callee: expr,
+      callee,
       args: this.arguments(),
     });
 
@@ -318,10 +320,10 @@ export class Parser {
   }
 
   callExpression(): Expr {
-    const expr = this.memberExpression();
-    if (!this.check(TokenType.leftParen)) return expr;
+    const callee = this.memberExpression();
+    if (!this.check(TokenType.leftParen)) return callee;
 
-    return this.callExpressionPart(expr);
+    return this.callExpressionPart(callee);
   }
 
   arguments() {
@@ -388,6 +390,10 @@ export class Parser {
   statement() {
     if (this.check(TokenType.nl)) return this.emptyStatement();
     return this.expressionStatement();
+  }
+
+  parse() {
+    return this.program();
   }
 
   program(): Program & AcceptableReturnType {

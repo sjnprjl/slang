@@ -2,8 +2,11 @@
  * Let's build a environment
  */
 
+import { SlangCallable } from "./types.ts";
+
 interface IEnvironment {
   parent?: Environment;
+  variables?: Record<string, SlangCallable>;
 }
 
 export class Environment {
@@ -12,6 +15,11 @@ export class Environment {
 
   constructor(option?: IEnvironment) {
     this.parent = option?.parent;
+    if (option?.variables) {
+      for (const key in option.variables) {
+        this.set(key, option.variables[key]);
+      }
+    }
   }
 
   set(key: string, value: any) {
@@ -20,11 +28,11 @@ export class Environment {
   }
 
   get(key: string) {
-    return this.variables.get(key);
+    return this.resolve(key);
   }
 
   resolve(key: string): any {
-    if (this.variables.has(key)) return this.get(key);
+    if (this.variables.has(key)) return this.variables.get(key);
     if (!this.parent) throw `${key} not defined.`;
     return this.parent.resolve(key);
   }

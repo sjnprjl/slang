@@ -1,13 +1,18 @@
-import { Expr } from "./ast.ts";
 import { Environment } from "./environment.ts";
+import { Parser } from "./parser.ts";
+import { Tokenizer } from "./tokenizer.ts";
 
 export class Interpreter {
   constructor(
-    readonly ast: Expr,
+    private readonly source: string,
     readonly global: Environment,
-  ) { }
+    private tokenizer = Tokenizer,
+    private parser = Parser,
+  ) {}
 
   interpret() {
-    return this.ast.accept(this.global);
+    const tokenizer = new this.tokenizer(this.source);
+    const parser = new this.parser(tokenizer);
+    return parser.parse().accept(this.global);
   }
 }

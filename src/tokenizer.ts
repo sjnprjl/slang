@@ -159,7 +159,6 @@ export class Tokenizer {
       if (this.iseof) break;
       this.eat;
     }
-    if (this.islinebreak) this.eat;
   }
 
   // get next token
@@ -234,7 +233,7 @@ export class Tokenizer {
         return this.createToken(TokenType.comma, this.eat);
       }
 
-      this.error("Unexpected character token. ");
+      this.error("Unexpected character token. " + this.current);
     }
 
     return this.createToken(TokenType.eof, "eof");

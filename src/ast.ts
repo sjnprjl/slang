@@ -3,6 +3,7 @@ import { Token, TokenType } from "./token.ts";
 import {
   visitAssignmentExpression,
   visitBinaryExpression,
+  visitCallExpression,
   visitFunctionExpression,
   visitIdentifier,
   visitIfExpression,
@@ -42,7 +43,7 @@ export interface BaseAst {
   token: Token | null;
 }
 
-export interface Expr extends BaseAst, AcceptableReturnType {}
+export interface Expr extends BaseAst, AcceptableReturnType { }
 
 export interface Operator extends BaseAst {
   symbol: TokenType;
@@ -65,14 +66,14 @@ export interface Literal extends BaseAst {
   value: string | number | boolean | null;
 }
 
-export interface Identifier extends BaseAst {
+export interface Identifier extends Expr {
   kind: "Identifier";
   token: Token;
   value: string;
   outer: boolean;
 }
 // deno-lint-ignore no-empty-interface
-export interface IdentifierOpt extends Omit<Identifier, "value"> {}
+export interface IdentifierOpt extends Omit<Identifier, "value"> { }
 
 export interface MemberExpression extends BaseAst {
   id: Expr;
@@ -80,13 +81,13 @@ export interface MemberExpression extends BaseAst {
 }
 
 export interface CallExpression extends BaseAst {
-  callee: BaseAst;
-  args: BaseAst[];
+  callee: Expr;
+  args: Expr[];
   part?: CallExpression;
 }
 
 export interface AssignmentExpression extends BaseAst {
-  id: Identifier; // TODO: member expression
+  id: Expr; // TODO: member expression
   value: Expr;
 }
 
@@ -95,7 +96,7 @@ export interface Program extends BaseAst {
 }
 
 // deno-lint-ignore no-empty-interface
-export interface EmptyStatement extends BaseAst {}
+export interface EmptyStatement extends BaseAst { }
 
 export interface IfExpression extends BaseAst {
   condition: Expr | true;
@@ -174,6 +175,7 @@ export function astFactory<T extends BaseAst>(
     case "MemberExpression":
       return asAcceptable(option, visitMemberExpression);
     case "CallExpression":
+      return asAcceptable(option, visitCallExpression);
     default:
       throw `Ast not implemented for ${option.kind}`;
   }

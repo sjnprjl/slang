@@ -1,16 +1,8 @@
 import { Environment } from "./environment.ts";
 import { Interpreter } from "./interpreter";
-import { Parser } from "./parser";
-import { Tokenizer } from "./tokenizer";
 
 export class Repl {
-  private printAst = false;
-
-  private global: Environment;
-
-  constructor() {
-    this.global = new Environment();
-  }
+  constructor(readonly global: Environment) {}
 
   input() {
     //@ts-ignore Bun
@@ -18,12 +10,7 @@ export class Repl {
   }
 
   eval(source: string) {
-    const lexer = new Tokenizer(source);
-    const parser = new Parser(lexer);
-    const interpreter = new Interpreter(parser.program(), this.global);
-    if (this.printAst) {
-      return JSON.stringify(interpreter.ast, null, 2);
-    }
+    const interpreter = new Interpreter(source, this.global);
     return interpreter.interpret();
   }
 
@@ -34,14 +21,9 @@ export class Repl {
     // @ts-ignore Because of Bun
     for await (const line of console) {
       if (line === "exit") break;
-      if (line === "ast") {
-        this.printAst = true;
-      }
-      if (line === "noast") {
-        this.printAst = false;
-      }
       try {
-        console.log(this.eval(line));
+        const out = this.eval(line);
+        if (out !== undefined) console.log(out?.toString());
       } catch (err) {
         console.log(err);
       }
