@@ -32,12 +32,11 @@ export class Parser {
 
   error(message: string, offset = 0) {
     const errorLine =
-      `Error[${this.token.option.location.row}:${this.token.option.location.col}]: ${message} \n ${this.token.option.location.lineContent}`;
+      `Error[${this.token.option.location.row}:${this.token.option.location.col}]: ${message}, but got ${this.token.lexeme} \n ${this.token.option.location.lineContent}`;
 
-    throw `${errorLine}\n${
-      " ".repeat(
-        this.token.option.location.lineContent.length + offset,
-      )
+    throw `${errorLine}\n${" ".repeat(
+      this.token.option.location.lineContent.length + offset,
+    )
     }^`;
   }
 
@@ -383,7 +382,6 @@ export class Parser {
       this.eat(this.token.type, "");
       return;
     }
-    console.log(this.token);
     throw this.error("statement end expected");
   }
 
@@ -475,8 +473,6 @@ export class Parser {
     }
 
     if (!arrow) throw this.error("invalid elif expression");
-
-    this.end();
 
     return ifExpr;
   }
