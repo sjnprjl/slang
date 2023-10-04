@@ -1,6 +1,7 @@
 import {
   AssignmentExpression,
   BinaryExpression,
+  CallExpression,
   Expr,
   FunctionExpression,
   Identifier,
@@ -12,7 +13,7 @@ import {
 } from "./ast.ts";
 import { Environment } from "./environment.ts";
 import { TokenType } from "./token.ts";
-import { LiteralReturnType } from "./types.ts";
+import { LiteralReturnType, SlangCallable } from "./types.ts";
 
 export function visitLiteral(ast: Literal) {
   return ast.value;
@@ -139,4 +140,14 @@ export function visitAssignmentExpression(
 
 export function visitMemberExpression(ast: MemberExpression) {
   return ast;
+}
+
+export function visitCallExpression(ast: CallExpression, scope: Environment) {
+  const callee = ast.callee as Identifier; // TODO: make expression to be valid callee
+
+  const callable = scope.get(callee.value) as SlangCallable;
+
+  const args = ast.args.map((arg) => arg.accept(scope));
+
+  return callable.call(...args);
 }
