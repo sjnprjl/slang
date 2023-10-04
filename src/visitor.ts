@@ -1,5 +1,4 @@
 import {
-  AcceptableReturnType,
   ArrayLiteral,
   AssignmentExpression,
   BinaryExpression,
