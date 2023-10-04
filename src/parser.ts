@@ -14,6 +14,7 @@ import {
   Kind,
   MemberExpression,
   Program,
+  ReturnStatement,
   UnaryExpression,
 } from "./ast.ts";
 import { Token, TokenType } from "./token.ts";
@@ -263,10 +264,11 @@ export class Parser {
     const body = this.functionBody();
 
     return this.createAst<FunctionExpression>("FunctionExpression", {
-      anonymous: !!id,
+      anonymous: !id,
       token: null,
       id: id
         ? this.createAst<Identifier>("Identifier", {
+          outer: false,
           token: id,
           value: id.lexeme,
         })
@@ -375,7 +377,6 @@ export class Parser {
 
   expressionStatement() {
     const expression = this.expression();
-    this.end();
     return expression;
   }
 
@@ -389,6 +390,7 @@ export class Parser {
 
   statement() {
     if (this.check(TokenType.nl)) return this.emptyStatement();
+    if (this.check(TokenType.ret)) return this.returnStatement();
     return this.expressionStatement();
   }
 
@@ -421,7 +423,7 @@ export class Parser {
 
     if (this.check(TokenType.arrow)) {
       this.advance();
-      statements.push(this.expression());
+      statements.push(this.statement());
       return statements;
     }
 
@@ -517,5 +519,16 @@ export class Parser {
       default:
         throw this.error("Invalid literal value");
     }
+  }
+
+  returnStatement() {
+    this.eat(TokenType.ret, "ret statement expected");
+    let expr: Expr | null = null;
+    if (!this.check(TokenType.nl)) expr = this.expressionStatement();
+
+    return this.createAst<ReturnStatement>("ReturnStatement", {
+      token: null,
+      ret: expr,
+    });
   }
 }

@@ -1,4 +1,5 @@
 import {
+  AcceptableReturnType,
   AssignmentExpression,
   BinaryExpression,
   CallExpression,
@@ -9,11 +10,13 @@ import {
   Literal,
   MemberExpression,
   Program,
+  ReturnStatement,
   UnaryExpression,
 } from "./ast.ts";
 import { Environment } from "./environment.ts";
 import { TokenType } from "./token.ts";
 import { LiteralReturnType, SlangCallable } from "./types.ts";
+import { makeCallable, zip } from "./utils.ts";
 
 export function visitLiteral(ast: Literal) {
   return ast.value;
@@ -118,10 +121,40 @@ export function visitIfExpression(ast: IfExpression, declaration: Environment) {
 
 export function visitFunctionExpression(
   ast: FunctionExpression,
-  scope: Environment,
+  declaration: Environment,
 ) {
-  // TODO:
-  return null;
+  const scope = new Environment({ parent: declaration });
+
+  const callable = makeCallable({
+    arity: ast.params.length,
+
+    call: (...args: unknown[]) => {
+      if (args.length !== ast.params.length) {
+        throw `function expect ${ast.params.length} params, but got ${args.length}`;
+      }
+
+      zip(ast.params, args).map((v) => {
+        const [param, arg] = v;
+        declaration.set((param as Identifier).token.lexeme, arg);
+      });
+
+      try {
+        return evaluateList(ast.body, scope);
+      } catch (err) {
+        if ((err as ReturnStatement)?.kind !== "ReturnStatement") throw err;
+        return (err as any).value;
+      }
+    },
+
+    toString() {
+      return ast.anonymous ? "<anonFn>" : `fn<${ast.id!.value}>`;
+    },
+  });
+
+  if (ast.id) {
+    declaration.set(ast.id.value, callable);
+  }
+  return callable;
 }
 
 export function visitAssignmentExpression(
@@ -142,12 +175,29 @@ export function visitMemberExpression(ast: MemberExpression) {
   return ast;
 }
 
-export function visitCallExpression(ast: CallExpression, scope: Environment) {
+export function visitCallExpression(
+  ast: CallExpression,
+  scope: Environment,
+  callable: SlangCallable | null = null,
+) {
   const callee = ast.callee as Identifier; // TODO: make expression to be valid callee
 
-  const callable = scope.get(callee.value) as SlangCallable;
+  const _callable = callable ?? (scope.get(callee.value) as SlangCallable);
+
+  if (_callable.kind !== "Callable") {
+    throw `${callee.value} is not something we can call. We can only call function for now.`;
+  }
 
   const args = ast.args.map((arg) => arg.accept(scope));
 
-  return callable.call(...args);
+  const result = _callable.call(...args);
+
+  return result;
+}
+
+export function visitReturnStatement(ast: ReturnStatement, scope: Environment) {
+  throw {
+    kind: ast.kind,
+    value: ast.ret == null ? null : ast.ret.accept(scope),
+  };
 }

@@ -19,4 +19,5 @@ export const keywords = {
   end: TokenType.end,
   eq: TokenType.eq,
   neq: TokenType.neq,
+  ret: TokenType.ret,
 } as const;

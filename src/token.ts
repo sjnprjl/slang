@@ -26,6 +26,7 @@ export enum TokenType {
   for = "for",
   while = "while",
   class = "class",
+  ret = "ret",
 
   lt = "lessThan", // <
   gt = "greaterThan", // >
@@ -85,5 +86,5 @@ export class Token {
     readonly type: TokenType,
     readonly lexeme: string,
     readonly option: TokenOption,
-  ) {}
+  ) { }
 }

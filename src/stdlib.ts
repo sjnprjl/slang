@@ -1,25 +1,24 @@
 import { Environment } from "./environment.ts";
 import { SlangCallable } from "./types.ts";
+import { makeCallable } from "./utils.ts";
 
 export const global = new Environment({
   variables: {
-    out: {
+    out: makeCallable({
       arity: Infinity,
       call(...args: any[]) {
         console.log(...args.map((arg) => arg.toString()));
       },
+
       toString() {
         return "<native function>";
       },
-      valueOf() {
-        return null;
-      },
-    } as SlangCallable,
-    str: {
+    }),
+    str: makeCallable({
       arity: 1,
       call(str: unknown) {
         return str + "";
       },
-    } as SlangCallable,
+    }),
   },
 });

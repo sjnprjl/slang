@@ -1,4 +1,4 @@
-import { Expr } from "./ast.ts";
+import { BaseAst, Expr } from "./ast.ts";
 
 export type LiteralReturnType = string | number | null | boolean;
 
@@ -8,7 +8,7 @@ export interface Location {
   lineContent: string;
 }
 
-export interface SlangCallable {
+export interface SlangCallable extends BaseAst {
   arity: number;
   call(...args: unknown[]): unknown;
 }

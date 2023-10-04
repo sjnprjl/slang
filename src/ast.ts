@@ -10,6 +10,7 @@ import {
   visitLiteral,
   visitMemberExpression,
   visitProgram,
+  visitReturnStatement,
   visitUnaryExpression,
 } from "./visitor.ts";
 
@@ -28,6 +29,8 @@ export type Kind =
   | "IfExpression"
   | "EmptyStatement"
   | "FunctionExpression"
+  | "Callable"
+  | "ReturnStatement"
   | "Program";
 
 export interface Acceptable {
@@ -38,7 +41,7 @@ export interface AstFactoryOption extends BaseAst {
   kind: Kind;
 }
 
-export interface BaseAst {
+export interface BaseAst extends Object {
   kind: Kind;
   token: Token | null;
 }
@@ -47,6 +50,10 @@ export interface Expr extends BaseAst, AcceptableReturnType { }
 
 export interface Operator extends BaseAst {
   symbol: TokenType;
+}
+
+export interface ReturnStatement extends BaseAst {
+  ret: Expr | null;
 }
 
 export interface UnaryExpression extends BaseAst {
@@ -66,7 +73,7 @@ export interface Literal extends BaseAst {
   value: string | number | boolean | null;
 }
 
-export interface Identifier extends Expr {
+export interface Identifier extends BaseAst {
   kind: "Identifier";
   token: Token;
   value: string;
@@ -176,6 +183,8 @@ export function astFactory<T extends BaseAst>(
       return asAcceptable(option, visitMemberExpression);
     case "CallExpression":
       return asAcceptable(option, visitCallExpression);
+    case "ReturnStatement":
+      return asAcceptable(option, visitReturnStatement);
     default:
       throw `Ast not implemented for ${option.kind}`;
   }
