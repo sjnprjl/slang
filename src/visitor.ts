@@ -172,8 +172,13 @@ export function visitAssignmentExpression(
   return scope.set(variable, value);
 }
 
-export function visitMemberExpression(ast: MemberExpression) {
-  return ast;
+export function visitMemberExpression(
+  ast: MemberExpression,
+  scope: Environment,
+) {
+  const obj = ast.id.accept(scope) as SlangArray;
+
+  return obj.get(ast.member, scope);
 }
 
 export function visitCallExpression(

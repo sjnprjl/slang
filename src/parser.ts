@@ -218,19 +218,12 @@ export class Parser {
   }
 
   memberExpressionPart(expr: Expr): MemberExpression & AcceptableReturnType {
-    if (!this.check(TokenType.dot)) {
-      return this.createAst<MemberExpression>("MemberExpression", {
-        id: expr,
-        token: null,
-      });
-    }
-    // TODO: elif check for [
-
-    this.eat(this.token.type, "");
+    this.eat(TokenType.dot, ". expected");
     const property = this.property();
+
     return this.createAst<MemberExpression>("MemberExpression", {
       id: expr,
-      member: this.memberExpressionPart(property),
+      member: property,
       token: null,
     });
   }
@@ -298,21 +291,23 @@ export class Parser {
     }
 
     const expr = this.primary();
-    const mExpr = this.memberExpressionPart(expr);
-    if (!mExpr.member) return expr;
-    return mExpr;
+    if (!this.check(TokenType.dot)) return expr;
+    return this.memberExpressionPart(expr);
   }
 
   property() {
-    if (this.check(TokenType.id)) {
-      return this.identifier();
-    } // TODO: elif check(literal)
-    throw this.error("Unknow property kind");
+    switch (this.token.type) {
+      case TokenType.id:
+        return this.identifier();
+      case TokenType.number:
+      case TokenType.string:
+        return this.literal();
+      default:
+        throw this.error("property access should be id, num, or string");
+    }
   }
 
-  callExpressionPart(
-    callee: Expr,
-  ): Expr {
+  callExpressionPart(callee: Expr): Expr {
     if (!this.check(TokenType.leftParen)) return callee;
 
     const part = this.createAst<CallExpression>("CallExpression", {

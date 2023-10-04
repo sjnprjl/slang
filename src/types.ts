@@ -1,4 +1,5 @@
-import { BaseAst } from "./ast.ts";
+import { BaseAst, Expr } from "./ast.ts";
+import { Environment } from "./environment.ts";
 
 export type LiteralReturnType = string | number | null | boolean;
 
@@ -33,5 +34,14 @@ export class SlangArray extends Array {
 
   toString() {
     return `{${this.elements.join(",")}}`;
+  }
+
+  get(prop: Expr, scope: Environment) {
+    if (prop.kind !== "NumberLiteral") {
+      throw "member should be number literal";
+    }
+    const v = prop.accept(scope) as number;
+    if (v >= this.length) throw "array bound error";
+    return this.elements.at(v);
   }
 }

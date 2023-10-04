@@ -90,7 +90,7 @@ export interface IdentifierOpt extends Omit<Identifier, "value"> {}
 
 export interface MemberExpression extends BaseAst {
   id: Expr;
-  member?: MemberExpression;
+  member: Expr;
 }
 
 export interface CallExpression extends BaseAst {

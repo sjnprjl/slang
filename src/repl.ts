@@ -15,7 +15,7 @@ export class Repl {
   }
 
   async run() {
-    console.log("Slang :)");
+    console.log("SLang :)");
     this.input();
 
     // @ts-ignore Because of Bun
