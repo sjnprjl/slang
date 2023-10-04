@@ -1,5 +1,6 @@
 import {
   AcceptableReturnType,
+  ArrayLiteral,
   AssignmentExpression,
   astFactory,
   AstFactoryOption,
@@ -35,9 +36,10 @@ export class Parser {
     const errorLine =
       `Error[${this.token.option.location.row}:${this.token.option.location.col}]: ${message}, but got ${this.token.lexeme} \n ${this.token.option.location.lineContent}`;
 
-    throw `${errorLine}\n${" ".repeat(
-      this.token.option.location.lineContent.length + offset,
-    )
+    throw `${errorLine}\n${
+      " ".repeat(
+        this.token.option.location.lineContent.length + offset,
+      )
     }^`;
   }
 
@@ -105,6 +107,7 @@ export class Parser {
       case TokenType.number:
       case TokenType.boolean:
       case TokenType.null:
+      case TokenType.leftCurlyBrace:
         return this.literal();
       case TokenType.id:
       case TokenType.global:
@@ -516,9 +519,27 @@ export class Parser {
         return this.createAst("BooleanLiteral", { token: this.advance() });
       case TokenType.null:
         return this.createAst("NullLiteral", { token: this.advance() });
+      case TokenType.leftCurlyBrace:
+        return this.array();
       default:
         throw this.error("Invalid literal value");
     }
+  }
+
+  array() {
+    const elements = [];
+    this.eat(TokenType.leftCurlyBrace, "{ expected.");
+    while (!this.check(TokenType.rightCurlyBrace)) {
+      elements.push(this.expression());
+      if (!this.check(TokenType.rightCurlyBrace)) {
+        this.eat(TokenType.comma, ", expected.");
+      }
+    }
+    this.eat(TokenType.rightCurlyBrace, "} expected.");
+    return this.createAst<ArrayLiteral>("ArrayLiteral", {
+      elements,
+      token: null,
+    });
   }
 
   returnStatement() {

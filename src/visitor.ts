@@ -1,5 +1,6 @@
 import {
   AcceptableReturnType,
+  ArrayLiteral,
   AssignmentExpression,
   BinaryExpression,
   CallExpression,
@@ -15,7 +16,7 @@ import {
 } from "./ast.ts";
 import { Environment } from "./environment.ts";
 import { TokenType } from "./token.ts";
-import { LiteralReturnType, SlangCallable } from "./types.ts";
+import { LiteralReturnType, SlangArray, SlangCallable } from "./types.ts";
 import { makeCallable, zip } from "./utils.ts";
 
 export function visitLiteral(ast: Literal) {
@@ -200,4 +201,9 @@ export function visitReturnStatement(ast: ReturnStatement, scope: Environment) {
     kind: ast.kind,
     value: ast.ret == null ? null : ast.ret.accept(scope),
   };
+}
+
+export function visitArrayLiteral(ast: ArrayLiteral, scope: Environment) {
+  const elements = ast.elements.map((element) => element.accept(scope));
+  return new SlangArray(elements, elements.length);
 }

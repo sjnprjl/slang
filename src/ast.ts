@@ -1,6 +1,7 @@
 import { Environment } from "./environment.ts";
 import { Token, TokenType } from "./token.ts";
 import {
+  visitArrayLiteral,
   visitAssignmentExpression,
   visitBinaryExpression,
   visitCallExpression,
@@ -31,6 +32,7 @@ export type Kind =
   | "FunctionExpression"
   | "Callable"
   | "ReturnStatement"
+  | "ArrayLiteral"
   | "Program";
 
 export interface Acceptable {
@@ -46,7 +48,7 @@ export interface BaseAst extends Object {
   token: Token | null;
 }
 
-export interface Expr extends BaseAst, AcceptableReturnType { }
+export interface Expr extends BaseAst, AcceptableReturnType {}
 
 export interface Operator extends BaseAst {
   symbol: TokenType;
@@ -54,6 +56,10 @@ export interface Operator extends BaseAst {
 
 export interface ReturnStatement extends BaseAst {
   ret: Expr | null;
+}
+
+export interface ArrayLiteral extends BaseAst {
+  elements: Expr[];
 }
 
 export interface UnaryExpression extends BaseAst {
@@ -80,7 +86,7 @@ export interface Identifier extends BaseAst {
   outer: boolean;
 }
 // deno-lint-ignore no-empty-interface
-export interface IdentifierOpt extends Omit<Identifier, "value"> { }
+export interface IdentifierOpt extends Omit<Identifier, "value"> {}
 
 export interface MemberExpression extends BaseAst {
   id: Expr;
@@ -103,7 +109,7 @@ export interface Program extends BaseAst {
 }
 
 // deno-lint-ignore no-empty-interface
-export interface EmptyStatement extends BaseAst { }
+export interface EmptyStatement extends BaseAst {}
 
 export interface IfExpression extends BaseAst {
   condition: Expr | true;
@@ -185,6 +191,8 @@ export function astFactory<T extends BaseAst>(
       return asAcceptable(option, visitCallExpression);
     case "ReturnStatement":
       return asAcceptable(option, visitReturnStatement);
+    case "ArrayLiteral":
+      return asAcceptable(option, visitArrayLiteral);
     default:
       throw `Ast not implemented for ${option.kind}`;
   }

@@ -66,6 +66,9 @@ export enum TokenType {
 
   dot = "dot", // .
 
+  leftCurlyBrace = "leftCurlyBrace", // {
+  rightCurlyBrace = "rightCurlyBrace", // }
+
   /*
    * identifier
    */
@@ -86,5 +89,5 @@ export class Token {
     readonly type: TokenType,
     readonly lexeme: string,
     readonly option: TokenOption,
-  ) { }
+  ) {}
 }

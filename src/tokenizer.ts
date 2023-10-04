@@ -233,6 +233,14 @@ export class Tokenizer {
         return this.createToken(TokenType.comma, this.eat);
       }
 
+      if (this.current === "{") {
+        return this.createToken(TokenType.leftCurlyBrace, this.eat);
+      }
+
+      if (this.current === "}") {
+        return this.createToken(TokenType.rightCurlyBrace, this.eat);
+      }
+
       this.error("Unexpected character token. " + this.current);
     }
 

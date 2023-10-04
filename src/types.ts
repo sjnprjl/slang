@@ -1,4 +1,4 @@
-import { BaseAst, Expr } from "./ast.ts";
+import { BaseAst } from "./ast.ts";
 
 export type LiteralReturnType = string | number | null | boolean;
 
@@ -22,3 +22,16 @@ export const makeLocation = (
   col,
   lineContent,
 });
+
+export class SlangArray extends Array {
+  constructor(
+    readonly elements: any[],
+    length: number,
+  ) {
+    super(length);
+  }
+
+  toString() {
+    return `{${this.elements.join(",")}}`;
+  }
+}
