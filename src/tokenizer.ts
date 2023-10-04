@@ -4,13 +4,13 @@
 
 import { keywords } from "./constants.ts";
 import { Token, TokenType } from "./token.ts";
+import { makeLocation } from "./types.ts";
 
 export class Tokenizer {
   cursor = 0;
-  line = 1;
-  column = 0;
-
   prev: Token | null = null;
+  line = 1;
+  lineStart = 0;
 
   constructor(private source: string) {}
 
@@ -28,7 +28,13 @@ export class Tokenizer {
   }
 
   private createToken(type: TokenType, lexeme: string) {
-    return new Token(type, lexeme, { line: this.line, column: this.column });
+    return new Token(type, lexeme, {
+      location: makeLocation(
+        this.line,
+        this.cursor,
+        this.source.substring(this.lineStart, this.cursor),
+      ),
+    });
   }
 
   get islinebreak() {
@@ -40,6 +46,10 @@ export class Tokenizer {
 
   get eat() {
     if (this.iseof) this.error("Unexpected end of input.");
+    if (this.current === "\n") {
+      this.line++;
+      this.lineStart = this.cursor;
+    }
     return this.source[this.cursor++];
   }
 
@@ -193,9 +203,7 @@ export class Tokenizer {
       if (this.isidentinitial) return this.tokenizeId();
 
       if (this.current === "\n") {
-        this.line++;
         this.eat;
-        this.column = this.cursor;
         return this.createToken(TokenType.nl, "\\n");
       }
 

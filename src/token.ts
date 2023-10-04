@@ -2,6 +2,8 @@
  * TokenType enum
  */
 
+import { Location } from "./types";
+
 export enum TokenType {
   /*
    * constants
@@ -75,12 +77,7 @@ export enum TokenType {
 }
 
 interface TokenOption {
-  line: number;
-  column: number;
-
-  // TODO:
-  begin?: number;
-  end?: number;
+  location: Location;
 }
 
 export class Token {

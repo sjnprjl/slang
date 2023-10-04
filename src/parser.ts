@@ -30,8 +30,15 @@ export class Parser {
     this.token = this.tokenizer.nextToken;
   }
 
-  error(message: string) {
-    throw message;
+  error(message: string, offset = 0) {
+    const errorLine =
+      `Error[${this.token.option.location.row}:${this.token.option.location.col}]: ${message} \n ${this.token.option.location.lineContent}`;
+
+    throw `${errorLine}\n${
+      " ".repeat(
+        this.token.option.location.lineContent.length + offset,
+      )
+    }^`;
   }
 
   peek() {
@@ -107,7 +114,7 @@ export class Parser {
       case TokenType.if:
         return this.ifExpression();
       default:
-        throw "invalid primary constant";
+        this.error("invalid primary constant");
     }
   }
 
@@ -261,9 +268,9 @@ export class Parser {
       token: null,
       id: id
         ? this.createAst<Identifier>("Identifier", {
-            token: id,
-            value: id.lexeme,
-          })
+          token: id,
+          value: id.lexeme,
+        })
         : undefined,
       params: parameters,
       body,
@@ -296,7 +303,7 @@ export class Parser {
     if (this.check(TokenType.id)) {
       return this.identifier();
     } // TODO: elif check(literal)
-    throw "Unknow property kind";
+    throw this.error("Unknow property kind");
   }
 
   callExpressionPart(expr: Expr): Expr {
@@ -377,7 +384,7 @@ export class Parser {
       return;
     }
     console.log(this.token);
-    throw "statement end expected";
+    throw this.error("statement end expected");
   }
 
   statement() {
@@ -400,6 +407,13 @@ export class Parser {
 
   ifExpressionBody() {
     const statements = [];
+
+    if (!this.check(TokenType.arrow) && !this.check(TokenType.nl)) {
+      throw this.error(
+        `-> is expected for oneliner if expression or line break to enclose multi statement if.`,
+        1,
+      );
+    }
 
     if (this.check(TokenType.arrow)) {
       this.advance();
@@ -460,7 +474,7 @@ export class Parser {
       return ifExpr;
     }
 
-    if (!arrow) throw "invalid elif expression";
+    if (!arrow) throw this.error("invalid elif expression");
 
     this.end();
 
