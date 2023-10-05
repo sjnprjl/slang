@@ -1,13 +1,2 @@
-fn read_file(path, cb_fn)
-// stdlib read function
-  out(cb_fn)
-  read(path, cb_fn)
-end
-
-fn reader(text)
-  out(text)
-end
-
-
-read_file('./index.ts', reader)
-
+// read a file and output text to std output
+read('./index.ts', fn(text) out(text) end)
