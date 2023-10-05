@@ -189,6 +189,8 @@ export function astFactory<T extends Expr>(option: Omit<T, "accept">): T {
       return asAcceptable(option, visitReturnStatement);
     case "ArrayLiteral":
       return asAcceptable(option, visitArrayLiteral);
+    case "Operator":
+      return asAcceptable(option, (ast: Expr) => ast);
     default:
       throw `Ast not implemented for ${option.kind}`;
   }
