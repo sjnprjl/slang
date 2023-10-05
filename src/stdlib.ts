@@ -20,5 +20,15 @@ export const global = new Environment({
         return str + "";
       },
     }),
+
+    read: makeCallable({
+      arity: 2,
+      call(path: string, cb: SlangCallable) {
+        const file = Bun.file(path);
+        file.text().then((text: string) => {
+          cb.call(text);
+        });
+      },
+    }),
   },
 });
