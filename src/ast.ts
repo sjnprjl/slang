@@ -39,7 +39,7 @@ export interface Acceptable {
   accept(ast: BaseAst, scope: Environment): unknown;
 }
 
-export interface AstFactoryOption extends BaseAst {
+export interface AstFactoryOption extends Expr {
   kind: Kind;
 }
 
@@ -48,88 +48,86 @@ export interface BaseAst extends Object {
   token: Token | null;
 }
 
-export interface Expr extends BaseAst, AcceptableReturnType {}
+export interface Expr extends BaseAst {
+  accept(scope: Environment): unknown;
+}
 
-export interface Operator extends BaseAst {
+export interface Operator extends Expr {
   symbol: TokenType;
 }
 
-export interface ReturnStatement extends BaseAst {
+export interface ReturnStatement extends Expr {
   ret: Expr | null;
 }
 
-export interface ArrayLiteral extends BaseAst {
+export interface ArrayLiteral extends Expr {
   elements: Expr[];
 }
 
-export interface UnaryExpression extends BaseAst {
+export interface UnaryExpression extends Expr {
   operator: Operator;
   expression: Expr;
 }
 
-export interface BinaryExpression extends BaseAst {
+export interface BinaryExpression extends Expr {
   left: Expr;
   operator: Operator;
   right: Expr;
 }
 
-export interface Literal extends BaseAst {
+export interface Literal extends Expr {
   kind: "StringLiteral" | "NumberLiteral" | "BooleanLiteral" | "NullLiteral";
   token: Token;
   value: string | number | boolean | null;
 }
 
-export interface Identifier extends BaseAst {
+export interface Identifier extends Expr {
   kind: "Identifier";
   token: Token;
   value: string;
   outer: boolean;
 }
-// deno-lint-ignore no-empty-interface
-export interface IdentifierOpt extends Omit<Identifier, "value"> {}
 
-export interface MemberExpression extends BaseAst {
+export interface MemberExpression extends Expr {
   id: Expr;
   member: Expr;
 }
 
-export interface CallExpression extends BaseAst {
+export interface CallExpression extends Expr {
   callee: Expr;
   args: Expr[];
   part?: CallExpression;
 }
 
-export interface AssignmentExpression extends BaseAst {
+export interface AssignmentExpression extends Expr {
   id: Expr; // TODO: member expression
   value: Expr;
 }
 
-export interface Program extends BaseAst {
+export interface Program extends Expr {
   body: Expr[];
 }
 
 // deno-lint-ignore no-empty-interface
-export interface EmptyStatement extends BaseAst {}
+export interface EmptyStatement extends Expr { }
 
-export interface IfExpression extends BaseAst {
+export interface IfExpression extends Expr {
   condition: Expr | true;
   body: Expr[];
   elif?: IfExpression;
 }
 
-export interface FunctionExpression extends BaseAst {
+export interface FunctionExpression extends Expr {
   id?: Identifier;
   anonymous: boolean;
   body: Expr[];
-  params: (IdentifierOpt & AcceptableReturnType)[];
+  params: Identifier[];
 }
 
-export type AcceptableReturnType = ReturnType<typeof asAcceptable>;
-
-function asAcceptable<T extends BaseAst>(
-  ast: T,
+function asAcceptable<T extends Expr>(
+  ast: Omit<T, "accept">,
   _accept: Acceptable["accept"],
-): T & { accept: (scope: Environment) => ReturnType<Acceptable["accept"]> } {
+): T {
   const _ast = { ...ast };
 
   return {
@@ -137,12 +135,10 @@ function asAcceptable<T extends BaseAst>(
     accept(scope: Environment) {
       return _accept(ast, scope);
     },
-  };
+  } as T;
 }
 
-export function astFactory<T extends BaseAst>(
-  option: T,
-): T & AcceptableReturnType {
+export function astFactory<T extends Expr>(option: Omit<T, "accept">): T {
   switch (option.kind) {
     case "StringLiteral":
       return asAcceptable(
@@ -204,10 +200,10 @@ export function binaryAstBuilder(left: Expr, op: Token, right: Expr) {
     token: null,
     left,
     right,
-    operator: {
+    operator: astFactory<Operator>({
       kind: "Operator",
       symbol: op.type,
       token: op,
-    },
+    }),
   });
 }

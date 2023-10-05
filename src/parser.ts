@@ -1,19 +1,17 @@
 import {
-  AcceptableReturnType,
   ArrayLiteral,
   AssignmentExpression,
   astFactory,
-  AstFactoryOption,
   binaryAstBuilder,
   CallExpression,
   EmptyStatement,
   Expr,
   FunctionExpression,
   Identifier,
-  IdentifierOpt,
   IfExpression,
   Kind,
   MemberExpression,
+  Operator,
   Program,
   ReturnStatement,
   UnaryExpression,
@@ -36,10 +34,9 @@ export class Parser {
     const errorLine =
       `Error[${this.token.option.location.row}:${this.token.option.location.col}]: ${message}, but got ${this.token.lexeme} \n ${this.token.option.location.lineContent}`;
 
-    throw `${errorLine}\n${
-      " ".repeat(
-        this.token.option.location.lineContent.length + offset,
-      )
+    throw `${errorLine}\n${" ".repeat(
+      this.token.option.location.lineContent.length + offset,
+    )
     }^`;
   }
 
@@ -70,19 +67,18 @@ export class Parser {
     return true;
   }
 
-  createAst<T extends AstFactoryOption>(
-    kind: Kind,
-    rest?: Omit<T, "kind">,
-  ): T & AcceptableReturnType {
+  createAst<T extends Expr>(kind: Kind, rest?: Omit<T, "kind" | "accept">): T {
     return astFactory<T>({ kind, token: null, ...rest } as T);
   }
 
   identifier() {
     const global = this.check(TokenType.global) && this.match(TokenType.global);
     if (this.check(TokenType.id)) {
-      return this.createAst<IdentifierOpt>("Identifier", {
-        token: this.advance(),
+      const token = this.advance();
+      return this.createAst<Identifier>("Identifier", {
+        token,
         outer: global,
+        value: token.lexeme,
       });
     }
     throw this.error(`Expected valid identifier token. got ${this.token.type}`);
@@ -129,11 +125,10 @@ export class Parser {
 
     return this.createAst<UnaryExpression>("UnaryExpression", {
       token: null,
-      operator: {
+      operator: this.createAst<Operator>("Operator", {
         token: operator,
         symbol: operator.type,
-        kind: "Operator",
-      },
+      }),
       expression,
     });
   }
@@ -217,15 +212,19 @@ export class Parser {
     return this.logicalOrExpression();
   }
 
-  memberExpressionPart(expr: Expr): MemberExpression & AcceptableReturnType {
+  memberExpressionPart(expr: Expr): MemberExpression {
     this.eat(TokenType.dot, ". expected");
     const property = this.property();
 
-    return this.createAst<MemberExpression>("MemberExpression", {
+    const member = this.createAst<MemberExpression>("MemberExpression", {
       id: expr,
       member: property,
       token: null,
     });
+
+    if (!this.check(TokenType.dot)) return member;
+
+    return this.memberExpressionPart(member);
   }
 
   functionParameterList(): ReturnType<typeof this.identifier>[] {
@@ -303,7 +302,9 @@ export class Parser {
       case TokenType.string:
         return this.literal();
       default:
-        throw this.error("property access should be id, num, or string");
+        throw this.error(
+          "Expect property after '.' and it should be either identifier or literal.",
+        );
     }
   }
 
@@ -396,7 +397,7 @@ export class Parser {
     return this.program();
   }
 
-  program(): Program & AcceptableReturnType {
+  program(): Expr {
     const expressions = [];
 
     while (!this.check(TokenType.eof)) {
@@ -444,10 +445,7 @@ export class Parser {
     };
   }
 
-  elifExpressionPart(
-    ifExpr: IfExpression & AcceptableReturnType,
-    arrow: boolean,
-  ): IfExpression & AcceptableReturnType {
+  elifExpressionPart(ifExpr: IfExpression, arrow: boolean): IfExpression {
     if (this.check(TokenType.end)) {
       this.advance();
       return ifExpr;
@@ -483,7 +481,7 @@ export class Parser {
     return ifExpr;
   }
 
-  ifExpression(): IfExpression & AcceptableReturnType {
+  ifExpression(): IfExpression {
     this.eat(TokenType.if, "if expected.");
 
     const { condition, statements, arrow } = this.ifExpressionPart();

@@ -15,7 +15,12 @@ import {
 } from "./ast.ts";
 import { Environment } from "./environment.ts";
 import { TokenType } from "./token.ts";
-import { LiteralReturnType, SlangArray, SlangCallable } from "./types.ts";
+import {
+  LiteralReturnType,
+  SlangArray,
+  SlangCallable,
+  SlangClassType,
+} from "./types.ts";
 import { makeCallable, zip } from "./utils.ts";
 
 export function visitLiteral(ast: Literal) {
@@ -161,6 +166,14 @@ export function visitAssignmentExpression(
   ast: AssignmentExpression,
   scope: Environment,
 ) {
+  if (ast.id.kind === "MemberExpression") {
+    const klass = ast.id as unknown as MemberExpression;
+    const id = klass.id as unknown as Identifier;
+    const classType = scope.get(id.value) as SlangClassType;
+    const property = klass.member;
+    return classType.set(property, ast.value, scope);
+  }
+
   const variable = ast.id.value;
   const value = ast.value.accept(scope);
 
@@ -175,9 +188,25 @@ export function visitMemberExpression(
   ast: MemberExpression,
   scope: Environment,
 ) {
-  const obj = ast.id.accept(scope) as SlangArray;
+  const stack = [];
 
-  return obj.get(ast.member, scope);
+  let current = ast as MemberExpression;
+
+  while (current.id.kind !== "Identifier") {
+    stack.push(current);
+    current = (current as MemberExpression).id;
+  }
+
+  const instance = current.id.accept(scope) as SlangClassType;
+  const prop = current.member;
+
+  let obj = instance.get(prop, scope);
+
+  while (stack.length) {
+    obj = (obj as SlangClassType).get(stack.pop()!.member, scope);
+  }
+
+  return obj; // prolly say value. but fine.
 }
 
 export function visitCallExpression(
@@ -209,5 +238,5 @@ export function visitReturnStatement(ast: ReturnStatement, scope: Environment) {
 
 export function visitArrayLiteral(ast: ArrayLiteral, scope: Environment) {
   const elements = ast.elements.map((element) => element.accept(scope));
-  return new SlangArray(elements, elements.length);
+  return new SlangArray(elements);
 }

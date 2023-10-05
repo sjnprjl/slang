@@ -24,16 +24,29 @@ export const makeLocation = (
   lineContent,
 });
 
-export class SlangArray extends Array {
-  constructor(
-    readonly elements: any[],
-    length: number,
-  ) {
-    super(length);
+export interface SlangClassType {
+  get(prop: Expr, scope: Environment): unknown;
+  set(field: Expr, value: Expr, scope: Environment): unknown;
+}
+
+export class SlangArray implements SlangClassType {
+  constructor(readonly elements: any[]) { }
+  set(field: Expr, value: Expr, scope: Environment): unknown {
+    if (field.kind !== "NumberLiteral") {
+      throw "array property should be numeric type.";
+    }
+    const num = field.accept(scope) as number;
+    this.outboundCheck(num);
+    this.elements[num] = value.accept(scope);
+    return value.accept(scope);
   }
 
   toString() {
     return `{${this.elements.join(",")}}`;
+  }
+
+  outboundCheck(v: number) {
+    if (v >= this.elements.length) throw "array out of bound error";
   }
 
   get(prop: Expr, scope: Environment) {
@@ -41,7 +54,7 @@ export class SlangArray extends Array {
       throw "member should be number literal";
     }
     const v = prop.accept(scope) as number;
-    if (v >= this.length) throw "array bound error";
+    if (v >= this.elements.length) throw this.outboundCheck(v);
     return this.elements.at(v);
   }
 }
