@@ -4,6 +4,7 @@ import {
   astFactory,
   binaryAstBuilder,
   CallExpression,
+  ClassExpression,
   EmptyStatement,
   Expr,
   FunctionExpression,
@@ -15,6 +16,7 @@ import {
   Program,
   ReturnStatement,
   UnaryExpression,
+  WhileExpression,
 } from "./ast.ts";
 import { Token, TokenType } from "./token.ts";
 import { Tokenizer } from "./tokenizer.ts";
@@ -99,6 +101,29 @@ export class Parser implements IParser {
     return expression;
   }
 
+  classBody() {
+    const body = [];
+    while (!this.check(TokenType.end)) {
+      if (this.check(TokenType.fn)) {
+        body.push(this.functionExpression());
+      }
+      this.advance();
+    }
+    return body;
+  }
+
+  classExpression() {
+    this.eat(TokenType.class, "class keyword expected");
+    const id = this.identifier();
+    const body = this.classBody();
+    this.eat(TokenType.end, "end keyword expected to close class");
+    return this.createAst<ClassExpression>("ClassExpression", {
+      token: null,
+      id,
+      body,
+    });
+  }
+
   primary() {
     switch (this.token.type) {
       case TokenType.string:
@@ -114,6 +139,8 @@ export class Parser implements IParser {
         return this.groupExpression();
       case TokenType.if:
         return this.ifExpression();
+      case TokenType.class:
+        return this.classExpression();
       case TokenType.while:
         return this.whileExpression();
       default:
