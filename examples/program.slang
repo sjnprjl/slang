@@ -24,3 +24,9 @@ foo <- if if if if true -> 10 -> 20 -> 30 -> 40
 bar <- ( if ( if ( if ( if true -> 10 ) -> 20) -> 30 ) -> 40  ) // equiv.
 
 out(foo eq bar)
+
+// inspired by ruby 
+class Name
+end
+
+out(Name)

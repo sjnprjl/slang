@@ -3,6 +3,8 @@
                       | <ArrayLiteral>
                       | <Literal>
                       | <IfExpression>
+                      | <ClassExpression>
+                      | <WhileExpression>
 
 <Literal>           := string | number | boolean | null
 
@@ -11,6 +13,12 @@
 
 <ElementList>       := (<AssignmentExpression> ",")*
 
+<ClassExpression>   := 'class' <Id> <ClassBody> 'end'
+
+<ClassBody>         := <FunctionExpression>
+
+
+<WhileExpression>   := while <Expression> <StatementList> 'end'
 
 
 <UnaryExpression>          := <UnaryOperator> <UnaryExpression> | <LeftHandSideExpression>

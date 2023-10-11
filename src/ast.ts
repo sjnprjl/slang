@@ -5,6 +5,7 @@ import {
   visitAssignmentExpression,
   visitBinaryExpression,
   visitCallExpression,
+  visitClassExpression,
   visitFunctionExpression,
   visitIdentifier,
   visitIfExpression,
@@ -13,6 +14,7 @@ import {
   visitProgram,
   visitReturnStatement,
   visitUnaryExpression,
+  visitWhileExpression,
 } from "./visitor.ts";
 
 export type Kind =
@@ -33,6 +35,8 @@ export type Kind =
   | "Callable"
   | "ReturnStatement"
   | "ArrayLiteral"
+  | "ClassExpression"
+  | "WhileExpression"
   | "Program";
 
 export interface Acceptable {
@@ -90,7 +94,7 @@ export interface Identifier extends Expr {
 
 export interface MemberExpression extends Expr {
   id: Expr;
-  member: Expr;
+  member?: MemberExpression;
 }
 
 export interface CallExpression extends Expr {
@@ -109,7 +113,7 @@ export interface Program extends Expr {
 }
 
 // deno-lint-ignore no-empty-interface
-export interface EmptyStatement extends Expr { }
+export interface EmptyStatement extends Expr {}
 
 export interface IfExpression extends Expr {
   condition: Expr | true;
@@ -122,6 +126,16 @@ export interface FunctionExpression extends Expr {
   anonymous: boolean;
   body: Expr[];
   params: Identifier[];
+}
+
+export interface ClassExpression extends Expr {
+  id: Identifier;
+  body: Expr[];
+}
+
+export interface WhileExpression extends Expr {
+  booleanExpression: Expr;
+  body: Expr[];
 }
 
 function asAcceptable<T extends Expr>(
@@ -191,6 +205,10 @@ export function astFactory<T extends Expr>(option: Omit<T, "accept">): T {
       return asAcceptable(option, visitArrayLiteral);
     case "Operator":
       return asAcceptable(option, (ast: Expr) => ast);
+    case "ClassExpression":
+      return asAcceptable(option, visitClassExpression);
+    case "WhileExpression":
+      return asAcceptable(option, visitWhileExpression);
     default:
       throw `Ast not implemented for ${option.kind}`;
   }

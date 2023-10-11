@@ -4,9 +4,9 @@
 
 import { keywords } from "./constants.ts";
 import { Token, TokenType } from "./token.ts";
-import { makeLocation } from "./types.ts";
+import { ITokenizer, makeLocation } from "./types.ts";
 
-export class Tokenizer {
+export class Tokenizer implements ITokenizer {
   cursor = 0;
   prev: Token | null = null;
   line = 1;
@@ -102,6 +102,14 @@ export class Tokenizer {
     return this.createToken(TokenType.number, token);
   }
 
+  tokenizeHexString() {
+    this.eat;
+    this.eat;
+    const hex = `${this.eat}${this.eat}`;
+    const v = parseInt(hex, 16);
+    return String.fromCharCode(v);
+  }
+
   parseString() {
     let token = "";
     if (this.current !== '"' && this.current !== "'") {
@@ -110,13 +118,34 @@ export class Tokenizer {
 
     const start = this.eat;
 
+    const escapeCharacterTable = {
+      "\\n": "\n",
+      "\\\\": "\\",
+      "\\x": this.tokenizeHexString.bind(this),
+    };
+
     while (this.current !== start && !this.iseof) {
+      const t = `${this.current}${this.peek}`;
+      const escapeCharacter =
+        escapeCharacterTable[t as keyof typeof escapeCharacterTable];
+      if (typeof escapeCharacter === "function") {
+        token += escapeCharacter();
+        continue;
+      }
+      if (escapeCharacter) {
+        this.eat;
+        this.eat;
+        token += escapeCharacter;
+        continue;
+      }
+
       token += this.eat;
     }
     if (this.iseof) throw this.error("Unterminated string literal");
     this.eat;
 
-    return this.createToken(TokenType.string, token);
+    const t = this.createToken(TokenType.string, token);
+    return t;
   }
 
   tokenizePlus() {

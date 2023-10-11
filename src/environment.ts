@@ -11,7 +11,7 @@ interface IEnvironment {
 
 export class Environment {
   private variables = new Map();
-  readonly parent?: Environment;
+  private parent?: Environment;
 
   constructor(option?: IEnvironment) {
     this.parent = option?.parent;
@@ -29,6 +29,10 @@ export class Environment {
 
   get(key: string) {
     return this.resolve(key);
+  }
+
+  setParent(parent: Environment) {
+    this.parent = parent;
   }
 
   resolve(key: string): any {

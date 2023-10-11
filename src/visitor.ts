@@ -3,6 +3,7 @@ import {
   AssignmentExpression,
   BinaryExpression,
   CallExpression,
+  ClassExpression,
   Expr,
   FunctionExpression,
   Identifier,
@@ -12,6 +13,7 @@ import {
   Program,
   ReturnStatement,
   UnaryExpression,
+  WhileExpression,
 } from "./ast.ts";
 import { Environment } from "./environment.ts";
 import { TokenType } from "./token.ts";
@@ -19,6 +21,7 @@ import {
   LiteralReturnType,
   SlangArray,
   SlangCallable,
+  SlangClass,
   SlangClassType,
 } from "./types.ts";
 import { makeCallable, zip } from "./utils.ts";
@@ -28,9 +31,6 @@ export function visitLiteral(ast: Literal) {
 }
 
 export function visitIdentifier(ast: Identifier, scope: Environment) {
-  if (ast.outer && scope.parent) {
-    return scope.parent.resolve(ast.value);
-  }
   return scope.resolve(ast.value);
 }
 
@@ -111,13 +111,13 @@ export function visitUnaryExpression(ast: UnaryExpression, scope: Environment) {
 }
 
 export function visitIfExpression(ast: IfExpression, declaration: Environment) {
-  const scope = new Environment({ parent: declaration });
-
   if (typeof ast.condition === "boolean" && ast.condition === true) {
     return evaluateList(ast.body, declaration);
   }
 
-  if (ast.condition.accept(declaration)) return evaluateList(ast.body, scope);
+  if (ast.condition.accept(declaration)) {
+    return evaluateList(ast.body, declaration);
+  }
 
   if (!ast.elif) return null;
 
@@ -128,19 +128,18 @@ export function visitFunctionExpression(
   ast: FunctionExpression,
   declaration: Environment,
 ) {
-  const scope = new Environment({ parent: declaration });
-
   const callable = makeCallable({
     arity: ast.params.length,
 
     call: (...args: unknown[]) => {
+      const scope = new Environment({ parent: declaration });
       if (args.length !== ast.params.length) {
         throw `function expect ${ast.params.length} params, but got ${args.length}`;
       }
 
       zip(ast.params, args).map((v) => {
         const [param, arg] = v;
-        declaration.set((param as Identifier).token.lexeme, arg);
+        scope.set((param as Identifier).token.lexeme, arg);
       });
 
       try {
@@ -188,41 +187,30 @@ export function visitMemberExpression(
   ast: MemberExpression,
   scope: Environment,
 ) {
-  const stack = [];
-
-  let current = ast as MemberExpression;
-
-  while (current.id.kind !== "Identifier") {
-    stack.push(current);
-    current = (current as MemberExpression).id;
+  let inst = ast.id.accept(scope) as SlangClass;
+  let member = ast.member;
+  while (member) {
+    inst = inst.get(member, scope) as SlangClass;
+    member = member.member;
   }
-
-  const instance = current.id.accept(scope) as SlangClassType;
-  const prop = current.member;
-
-  let obj = instance.get(prop, scope);
-
-  while (stack.length) {
-    obj = (obj as SlangClassType).get(stack.pop()!.member, scope);
-  }
-
-  return obj; // prolly say value. but fine.
+  return inst;
 }
 
 export function visitCallExpression(
   ast: CallExpression,
-  scope: Environment,
+  declaration: Environment,
   callable: SlangCallable | null = null,
 ) {
   const callee = ast.callee as Identifier; // TODO: make expression to be valid callee
 
-  const _callable = callable ?? (scope.get(callee.value) as SlangCallable);
+  const _callable = callable ??
+    (declaration.get(callee.value) as SlangCallable);
 
   if (_callable.kind !== "Callable") {
     throw `${callee.value} is not something we can call. We can only call function for now.`;
   }
 
-  const args = ast.args.map((arg) => arg.accept(scope));
+  const args = ast.args.map((arg) => arg.accept(declaration));
 
   const result = _callable.call(...args);
 
@@ -239,4 +227,19 @@ export function visitReturnStatement(ast: ReturnStatement, scope: Environment) {
 export function visitArrayLiteral(ast: ArrayLiteral, scope: Environment) {
   const elements = ast.elements.map((element) => element.accept(scope));
   return new SlangArray(elements);
+}
+
+export function visitClassExpression(ast: ClassExpression, scope: Environment) {
+  const identifier = ast.id.value;
+  const klass = new SlangClass(identifier);
+  scope.set(identifier, klass);
+  return klass;
+}
+
+export function visitWhileExpression(ast: WhileExpression, scope: Environment) {
+  let result = null;
+  while (ast.booleanExpression.accept(scope)) {
+    result = evaluateList(ast.body, scope);
+  }
+  return result;
 }

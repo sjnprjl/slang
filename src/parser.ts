@@ -37,10 +37,9 @@ export class Parser implements IParser {
     const errorLine =
       `Error[${this.token.option.location.row}:${this.token.option.location.col}]: ${message}, but got ${this.token.lexeme} \n ${this.token.option.location.lineContent}`;
 
-    throw `${errorLine}\n${
-      " ".repeat(
-        this.token.option.location.lineContent.length + offset,
-      )
+    throw `${errorLine}\n${" ".repeat(
+      this.token.option.location.lineContent.length + offset,
+    )
     }^`;
   }
 
@@ -188,7 +187,6 @@ export class Parser implements IParser {
     const left = this.multiplicativeExpression();
 
     const expr = this.additiveHelper(left);
-    console.log(expr);
     return expr;
   }
 
