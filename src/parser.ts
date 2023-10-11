@@ -18,12 +18,13 @@ import {
 } from "./ast.ts";
 import { Token, TokenType } from "./token.ts";
 import { Tokenizer } from "./tokenizer.ts";
+import { IParser } from "./types.ts";
 import { match } from "./utils.ts";
 
 /*
  * Let's build parser
  */
-export class Parser {
+export class Parser implements IParser {
   private token: Token;
 
   constructor(readonly tokenizer: Tokenizer) {
@@ -34,9 +35,10 @@ export class Parser {
     const errorLine =
       `Error[${this.token.option.location.row}:${this.token.option.location.col}]: ${message}, but got ${this.token.lexeme} \n ${this.token.option.location.lineContent}`;
 
-    throw `${errorLine}\n${" ".repeat(
-      this.token.option.location.lineContent.length + offset,
-    )
+    throw `${errorLine}\n${
+      " ".repeat(
+        this.token.option.location.lineContent.length + offset,
+      )
     }^`;
   }
 
@@ -112,6 +114,8 @@ export class Parser {
         return this.groupExpression();
       case TokenType.if:
         return this.ifExpression();
+      case TokenType.while:
+        return this.whileExpression();
       default:
         throw this.error("invalid primary constant");
     }
@@ -140,72 +144,97 @@ export class Parser {
   }
 
   multiplicativeExpression(): Expr {
-    const unaryExpression = this.unaryExpression();
+    return this.multiplicativeHelper(this.unaryExpression());
+  }
 
-    if (!this.isMultplicativeOperator()) return unaryExpression;
-    const operator = this.eat(this.token.type, "");
-    const right = this.multiplicativeExpression();
-
-    return binaryAstBuilder(unaryExpression, operator, right);
+  multiplicativeHelper(left: Expr): Expr {
+    if (this.isMultplicativeOperator()) {
+      const operator = this.eat(this.token.type, "");
+      const right = this.unaryExpression();
+      const newLeft = binaryAstBuilder(left, operator, right);
+      return this.multiplicativeHelper(newLeft);
+    }
+    return left;
   }
 
   additiveExpression(): Expr {
-    const multiplicative = this.multiplicativeExpression();
+    const left = this.multiplicativeExpression();
 
-    if (!match(this.peek().type, [TokenType.plus, TokenType.minus])) {
-      return multiplicative;
+    const expr = this.additiveHelper(left);
+    console.log(expr);
+    return expr;
+  }
+
+  additiveHelper(left: Expr): Expr {
+    if (match(this.peek().type, [TokenType.plus, TokenType.minus])) {
+      const op = this.eat(this.token.type, "");
+      const right = this.multiplicativeExpression();
+      const newLeft = binaryAstBuilder(left, op, right);
+      return this.additiveHelper(newLeft);
     }
-    const op = this.eat(this.token.type, "");
-    const right = this.additiveExpression();
-
-    return binaryAstBuilder(multiplicative, op, right);
+    return left;
   }
 
   relationalExpression(): Expr {
-    const additive = this.additiveExpression();
+    return this.relationalHelper(this.additiveExpression());
+  }
+
+  relationalHelper(left: Expr): Expr {
     if (
-      !match(this.token.type, [
+      match(this.token.type, [
         TokenType.le,
         TokenType.lt,
         TokenType.ge,
         TokenType.gt,
       ])
     ) {
-      return additive;
+      const operator = this.advance();
+      const right = this.additiveExpression();
+      const newLeft = binaryAstBuilder(left, operator, right);
+      return this.relationalHelper(newLeft);
     }
-
-    return binaryAstBuilder(
-      additive,
-      this.advance(),
-      this.relationalExpression(),
-    );
+    return left;
+  }
+  equalityExpression(): Expr {
+    return this.equalityHelper(this.relationalExpression());
   }
 
-  equalityExpression(): Expr {
-    const relationalExpression = this.relationalExpression();
-
-    if (!match(this.token.type, [TokenType.eq, TokenType.neq])) {
-      return relationalExpression;
+  equalityHelper(left: Expr): Expr {
+    if (match(this.token.type, [TokenType.eq, TokenType.neq])) {
+      const operator = this.advance();
+      const right = this.relationalExpression();
+      const newLeft = binaryAstBuilder(left, operator, right);
+      return this.equalityHelper(newLeft);
     }
-
-    return binaryAstBuilder(
-      relationalExpression,
-      this.advance(),
-      this.equalityExpression(),
-    );
+    return left;
   }
 
   logicalAndExpression(): Expr {
-    const left = this.equalityExpression();
-    if (!this.check(TokenType.and)) return left;
+    return this.logicalAndHelper(this.equalityExpression());
+  }
 
-    return binaryAstBuilder(left, this.advance(), this.logicalAndExpression());
+  logicalAndHelper(left: Expr): Expr {
+    if (this.check(TokenType.and)) {
+      const operator = this.advance();
+      const right = this.equalityExpression();
+      const newLeft = binaryAstBuilder(left, operator, right);
+      return this.logicalAndHelper(newLeft);
+    }
+    return left;
   }
 
   logicalOrExpression(): Expr {
-    const left = this.logicalAndExpression();
-    if (!this.check(TokenType.or)) return left;
-    return binaryAstBuilder(left, this.advance(), this.logicalOrExpression());
+    return this.logicalOrHelper(this.logicalAndExpression());
+  }
+
+  logicalOrHelper(left: Expr): Expr {
+    if (this.check(TokenType.or)) {
+      const operator = this.advance();
+      const right = this.logicalAndExpression();
+      const newLeft = binaryAstBuilder(left, operator, right);
+      return this.logicalOrHelper(newLeft);
+    }
+    return left;
   }
 
   conditionalExpression() {
