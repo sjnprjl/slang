@@ -326,7 +326,7 @@ export class Parser implements IParser {
   property() {
     switch (this.token.type) {
       case TokenType.id:
-        return this.identifier();
+        return this.leftHandExpression();
       case TokenType.number:
       case TokenType.string:
         return this.literal();
