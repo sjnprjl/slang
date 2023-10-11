@@ -510,6 +510,26 @@ export class Parser implements IParser {
     return ifExpr;
   }
 
+  whileExpression() {
+    this.eat(TokenType.while, "while keyword expected.");
+    const booleanExpression = this.expression();
+    const statements = this.statementList();
+    this.eat(TokenType.end, "end keyword expected.");
+    return this.createAst<WhileExpression>("WhileExpression", {
+      token: null,
+      booleanExpression,
+      body: statements,
+    });
+  }
+
+  statementList() {
+    const statements = [];
+    while (!this.check(TokenType.end) && !this.check(TokenType.eof)) {
+      statements.push(this.statement());
+    }
+    return statements;
+  }
+
   ifExpression(): IfExpression {
     this.eat(TokenType.if, "if expected.");
 
