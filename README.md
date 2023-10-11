@@ -22,7 +22,7 @@ interpreter.
 ## Run on REPL
 
 ```bash
-bun index.ts # this will get you into repl
+./slang # this will get you into repl
 ```
 
 ## Examples
@@ -33,10 +33,18 @@ You can run example codes that are inside `./examples` directory.
 
 ```bash
 bun index.ts ./examples/<source_file>
+# or simply use executable
+./slang ./examples/...
 ```
 
 For factorial code
 
 ```bash
-bun index.ts ./examples/factorial.slang
+./slang ./examples/factorial.slang
+```
+
+Donut.c in slang
+
+```bash
+./slang ./examples/donut.slang
 ```
