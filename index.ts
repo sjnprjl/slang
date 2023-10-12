@@ -1,11 +1,10 @@
-#!/bin/node
-
 import yargs from "yargs";
 
 import { Repl } from "./src/repl.ts";
 import { hideBin } from "./node_modules/yargs/build/lib/utils/process-argv.js";
 import { Interpreter } from "./src/interpreter.ts";
 import { global } from "./src/stdlib.ts";
+import { fileReader } from "./src/utils.ts";
 
 //@ts-ignore Bun
 const commands = yargs(hideBin(process.argv))
@@ -26,7 +25,7 @@ if (!file) {
   const repl = new Repl(global);
   repl.run();
 } else {
-  readFile(file)
+  fileReader(file)
     .then((source: string) => {
       const interpreter = new Interpreter(source, global);
       interpreter.interpret();
@@ -34,11 +33,4 @@ if (!file) {
     .catch((err) => {
       throw err;
     });
-}
-
-async function readFile(path: string) {
-  //@ts-ignore Bun
-  const file = Bun.file(path);
-
-  return await file.text();
 }

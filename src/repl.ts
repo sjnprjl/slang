@@ -2,7 +2,7 @@ import { Environment } from "./environment.ts";
 import { Interpreter } from "./interpreter";
 
 export class Repl {
-  constructor(readonly global: Environment) {}
+  constructor(readonly global: Environment) { }
 
   input() {
     //@ts-ignore Bun
@@ -15,7 +15,7 @@ export class Repl {
   }
 
   async run() {
-    console.log("SLang :)");
+    console.log("SLang v.0");
     this.input();
 
     // @ts-ignore Because of Bun

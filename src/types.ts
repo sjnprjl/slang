@@ -167,3 +167,7 @@ export class SlangStringClass extends SlangClass {
     return this.value;
   }
 }
+
+export interface FileReader {
+  read(path: string): Promise<string>;
+}
