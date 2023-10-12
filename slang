@@ -1,3 +1,3 @@
 #!/bin/bash
 
-bun index.ts
+bun index.ts $1
