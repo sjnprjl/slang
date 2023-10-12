@@ -4,8 +4,8 @@ B <- 0
 fn asciiframe() 
   b <- { }
   z <- { }
-  @A <- @A + 0.05
-  @B <- @B + 0.07
+  @A <- @A + 0.05 // accessing outer scope vars with @
+  @B <- @B + 0.07 // ^
   cA <- cos(A)
   sA <- sin(A)
   cB <- cos(B)
